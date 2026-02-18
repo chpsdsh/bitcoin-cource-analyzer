@@ -34,3 +34,11 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
+
+  news-parser:
+    build: .
+    container_name: news-parser
+    restart: unless-stopped
+    environment:
+      KAFKA_BROKERS: "kafka:19092"
+      KAFKA_TOPIC: "extracted_data"

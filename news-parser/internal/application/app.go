@@ -21,22 +21,26 @@ type Application struct {
 }
 
 func (a Application) StartParsingNews(ctx context.Context) {
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				a.Ticker.Stop()
-				return
-			case <-a.Ticker.C:
-				news, err := a.RequestHandler.DoNewsRequest()
-				if err != nil {
-					slog.Error("error requesting news:", "err", err)
-				}
+	defer a.Ticker.Stop()
+	defer close(a.RequestChan)
 
-				for _, dto := range news.Articles {
-					a.RequestChan <- dto
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-a.Ticker.C:
+			news, err := a.RequestHandler.DoNewsRequest()
+			if err != nil {
+				slog.Error("error requesting news:", "err", err)
+			}
+
+			for _, dto := range news.Articles {
+				select {
+				case a.RequestChan <- dto:
+				case <-ctx.Done():
+					return
 				}
 			}
 		}
-	}()
+	}
 }
