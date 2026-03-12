@@ -17,8 +17,6 @@ def build_news_block(news: list[str], max_chars_per_news: int) -> str:
 
 def safe_json_loads(text: str) -> dict[str, Any]:
     text = text.strip()
-
-    # На случай если модель обернула в ```json ... ```
     text = re.sub(r"^```json\s*", "", text)
     text = re.sub(r"^```\s*", "", text)
     text = re.sub(r"\s*```$", "", text)

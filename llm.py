@@ -37,32 +37,20 @@ class LLMService:
         user_prompt: str,
         max_new_tokens: int,
     ) -> str:
-        print("[1] before load()", flush=True)
         self.load()
-        print("[2] after load()", flush=True)
-
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-
-        print("[3] before apply_chat_template", flush=True)
+        
         text = self.tokenizer.apply_chat_template(
             messages,
             tokenize=False,
             add_generation_prompt=True,
         )
-        print("[4] after apply_chat_template", flush=True)
-
-        print("[5] before tokenizer()", flush=True)
         model_inputs = self.tokenizer(text, return_tensors="pt")
-        print("[6] after tokenizer()", flush=True)
-
-        print("[7] before to(device)", flush=True)
         model_inputs = model_inputs.to(self.model.device)
-        print("[8] after to(device)", flush=True)
-
-        print("[9] before generate()", flush=True)
+        
         with torch.inference_mode():
             generated = self.model.generate(
                 **model_inputs,
@@ -74,11 +62,9 @@ class LLMService:
                 eos_token_id=self.tokenizer.eos_token_id,
                 pad_token_id=self.tokenizer.eos_token_id,
             )
-        print("[10] after generate()", flush=True)
 
         generated_ids = generated[0, model_inputs["input_ids"].shape[1]:]
         response = self.tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
-        print("[11] decoded response", flush=True)
         return response
 
     def _repair_json(
@@ -142,12 +128,9 @@ class LLMService:
             user_prompt=user_prompt,
             max_new_tokens=max_new_tokens,
         )
-
         try:
-            print("TRIED")
             return safe_json_loads(raw)
         except Exception:
-            print("EXCEPTED")
             return self._repair_json(
                 broken_response=raw,
                 original_user_prompt=user_prompt,

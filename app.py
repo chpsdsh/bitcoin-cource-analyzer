@@ -51,7 +51,6 @@ def summarize(request: SummarizeRequest) -> SummarizeResponse:
             max_chars_per_news=settings.max_input_chars_per_news,
             max_new_tokens=request.max_new_tokens or settings.default_max_new_tokens,
         )
-        print("TRY")
         return SummarizeResponse(
             category=result["category"],
             summarization=result["summarization"],
@@ -93,10 +92,6 @@ def score(request: ScoreRequest) -> ScoreResult:
 
 @app.post("/pipeline")
 def full_pipeline(request: SummarizeRequest) -> dict:
-    """
-    Для быстрого локального теста:
-    summarize -> score
-    """
     try:
         summary_result = llm_service.summarize(
             category=request.category,
