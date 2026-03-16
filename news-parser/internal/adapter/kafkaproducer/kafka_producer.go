@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
-	"news-parser/internal/domain"
 	"os"
 	"time"
+
+	"news-parser/internal/domain"
 
 	"github.com/segmentio/kafka-go"
 )

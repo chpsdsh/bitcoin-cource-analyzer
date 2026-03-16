@@ -4,17 +4,17 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
+
 	"news-parser/internal/adapter/kafkaproducer"
 	"news-parser/internal/adapter/networkclient"
 	"news-parser/internal/application"
 	"news-parser/internal/application/readers"
 	"news-parser/internal/domain"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
-
-	"time"
 )
 
 const (

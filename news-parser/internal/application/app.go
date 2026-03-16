@@ -3,8 +3,9 @@ package application
 import (
 	"context"
 	"log/slog"
-	"news-parser/internal/domain"
 	"time"
+
+	"news-parser/internal/domain"
 )
 
 const NewsRequestsCount = 50

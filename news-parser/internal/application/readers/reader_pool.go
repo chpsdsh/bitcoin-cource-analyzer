@@ -5,10 +5,11 @@ import (
 	"context"
 	"log/slog"
 	"net/url"
+	"sync"
+
 	"news-parser/internal/application"
 	"news-parser/internal/application/utils"
 	"news-parser/internal/domain"
-	"sync"
 
 	"github.com/go-shiori/go-readability"
 )

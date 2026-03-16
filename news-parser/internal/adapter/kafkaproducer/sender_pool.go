@@ -2,8 +2,9 @@ package kafkaproducer
 
 import (
 	"context"
-	"news-parser/internal/domain"
 	"sync"
+
+	"news-parser/internal/domain"
 )
 
 const NumKafkaSenders = 5
