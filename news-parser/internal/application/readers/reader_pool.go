@@ -22,7 +22,7 @@ type WorkerPool struct {
 
 type worker struct {
 	tasks   chan domain.GdeltApiDto
-	results chan domain.ResultDto
+	results chan domain.ArticleDto
 }
 
 func (w *worker) work(ctx context.Context, handler application.RequestHandler) {
@@ -32,21 +32,21 @@ func (w *worker) work(ctx context.Context, handler application.RequestHandler) {
 			if !ok {
 				return
 			}
-			requestUrl, err := url.Parse(task.Url)
+			requestUrl, err := url.Parse(task.URL)
 			if err != nil {
 				continue
 			}
-			data, err := handler.DoDataRequest(task.Url)
+			data, err := handler.DoDataRequest(task.URL)
 			if err != nil {
-				slog.Error("error requesting data", "url:", task.Url, "err:", err)
+				slog.Error("error requesting data", "url:", task.URL, "err:", err)
 				continue
 			}
 			article, err := readability.FromReader(bytes.NewReader(data), requestUrl)
 			if err != nil {
-				slog.Error("error getting data from html", "url:", task.Url, "err:", err)
+				slog.Error("error getting data from html", "url:", task.URL, "err:", err)
 				continue
 			}
-			w.results <- domain.ResultDto{Category: task.Category, Title: task.Title, Text: utils.NormalizeText(article.TextContent)}
+			w.results <- domain.ArticleDto{Category: task.Category, Title: task.Title, Text: utils.NormalizeText(article.TextContent)}
 		case <-ctx.Done():
 			return
 		}
@@ -55,7 +55,7 @@ func (w *worker) work(ctx context.Context, handler application.RequestHandler) {
 
 func (pool *WorkerPool) StartWorkers(ctx context.Context,
 	tasks chan domain.GdeltApiDto,
-	results chan domain.ResultDto,
+	results chan domain.ArticleDto,
 	handler application.RequestHandler) {
 	pool.workers = make([]*worker, NumWorkers)
 	for i := 0; i < NumWorkers; i++ {

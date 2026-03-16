@@ -1,10 +1,11 @@
 package domain
 
-type NewsArticles struct {
+type Articles struct {
 	Articles []GdeltApiDto `json:"articles"`
 }
 type GdeltApiDto struct {
-	Category string `json:"category"`
-	Url      string `json:"url"`
-	Title    string `json:"title"`
+	Category    string `json:"category"`
+	SocialImage string `json:"socialimage"`
+	URL         string `json:"url"`
+	Title       string `json:"title"`
 }

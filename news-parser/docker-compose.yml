@@ -41,4 +41,6 @@ services:
     restart: unless-stopped
     environment:
       KAFKA_BROKERS: "kafka:19092"
-      KAFKA_TOPIC: "extracted_data"
+      KAFKA_ARTICLES_TOPIC: "articles_data"
+      KAFKA_NEWS_TOPIC: "news_data"
+      LLM_ADDRESS: "http://llm-container"

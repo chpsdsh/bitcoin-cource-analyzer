@@ -9,31 +9,38 @@ import (
 const NumKafkaSenders = 5
 
 type Sender interface {
-	sendData(dto domain.ResultDto)
+	SendArticle(dto domain.ArticleDto)
+	SendNews(dto domain.NewsDto)
 }
 
 type KafkaSender struct {
-	records  chan domain.ResultDto
+	articles chan domain.ArticleDto
+	news     chan domain.NewsDto
 	producer Sender
+}
+
+func NewSenderPool(ctx context.Context, wg *sync.WaitGroup, articles chan domain.ArticleDto, news chan domain.NewsDto, producer Sender) {
+	for i := 0; i < NumKafkaSenders; i++ {
+		worker := KafkaSender{articles: articles, news: news, producer: producer}
+		wg.Go(func() { worker.sendDataToKafka(ctx) })
+	}
 }
 
 func (s KafkaSender) sendDataToKafka(ctx context.Context) {
 	for {
 		select {
-		case dto, ok := <-s.records:
+		case dto, ok := <-s.articles:
 			if !ok {
 				return
 			}
-			s.producer.sendData(dto)
+			s.producer.SendArticle(dto)
+		case news, ok := <-s.news:
+			if !ok {
+				return
+			}
+			s.producer.SendNews(news)
 		case <-ctx.Done():
 			return
 		}
-	}
-}
-
-func NewSenderPool(wg *sync.WaitGroup, ctx context.Context, records chan domain.ResultDto, producer Sender) {
-	for i := 0; i < NumKafkaSenders; i++ {
-		worker := KafkaSender{records: records, producer: producer}
-		wg.Go(func() { worker.sendDataToKafka(ctx) })
 	}
 }

@@ -1,8 +1,9 @@
-package adapter
+package networkclient
 
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"news-parser/internal/domain"
@@ -20,29 +21,52 @@ type NewsRequester struct {
 	Client *http.Client
 }
 
-func (nr NewsRequester) DoNewsRequest(category domain.Category) (domain.NewsArticles, error) {
+func (nr NewsRequester) DoNewsRequest(category domain.Category) (domain.Articles, error) {
 	URL := urlByCategory(category)
 	req, err := http.NewRequest(http.MethodGet, URL, nil)
 	if err != nil {
-		return domain.NewsArticles{}, err
+		return domain.Articles{}, fmt.Errorf("error creating request %w", err)
 	}
 
 	resp, err := nr.Client.Do(req)
 	if err != nil {
-		return domain.NewsArticles{}, err
+		return domain.Articles{}, fmt.Errorf("error doing request to GDELT API %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return domain.NewsArticles{}, err
+		return domain.Articles{}, fmt.Errorf("error reading request body %w", err)
 	}
 
-	articles := domain.NewsArticles{}
+	articles := domain.Articles{}
 	if err = json.Unmarshal(body, &articles); err != nil {
-		return domain.NewsArticles{}, err
+		return domain.Articles{}, fmt.Errorf("error unmarshalling JSON %w", err)
 	}
 	return articles, nil
+}
+
+func (nr NewsRequester) DoDataRequest(url string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request %w", err)
+	}
+
+	resp, err := nr.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error doing data request to url %s %w", url, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling JSON %w", err)
+	}
+	return body, nil
 }
 
 func urlByCategory(category domain.Category) string {
@@ -60,28 +84,4 @@ func urlByCategory(category domain.Category) string {
 		URL = itURL
 	}
 	return URL
-}
-
-func (nr NewsRequester) DoDataRequest(url string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := nr.Client.Do(req)
-
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(resp.Status)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
 }
