@@ -10,7 +10,7 @@ import (
 const NewsRequestsCount = 50
 
 type RequestHandler interface {
-	DoNewsRequest() (domain.NewsArticles, error)
+	DoNewsRequest(category domain.Category) (domain.NewsArticles, error)
 	DoDataRequest(url string) ([]byte, error)
 }
 
@@ -29,16 +29,22 @@ func (a Application) StartParsingNews(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-a.Ticker.C:
-			news, err := a.RequestHandler.DoNewsRequest()
-			if err != nil {
-				slog.Error("error requesting news:", "err", err)
-			}
+			for _, category := range domain.AllCategories {
+				news, err := a.RequestHandler.DoNewsRequest(category)
+				stringCategory := domain.CategoryToString(category)
 
-			for _, dto := range news.Articles {
-				select {
-				case a.RequestChan <- dto:
-				case <-ctx.Done():
-					return
+				go func() {
+					for _, dto := range news.Articles {
+						dto.Category = stringCategory
+						select {
+						case a.RequestChan <- dto:
+						case <-ctx.Done():
+							return
+						}
+					}
+				}()
+				if err != nil {
+					slog.Error("error requesting news:", "err", err)
 				}
 			}
 		}

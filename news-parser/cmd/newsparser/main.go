@@ -4,11 +4,11 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"news-parser/internal/adapter"
+	"news-parser/internal/adapter/kafkaproducer"
 	"news-parser/internal/application"
 	"news-parser/internal/application/readers"
 	"news-parser/internal/domain"
-	"news-parser/internal/infrastructure"
-	"news-parser/internal/infrastructure/kafkaproducer"
 	"os"
 	"os/signal"
 	"sync"
@@ -29,7 +29,7 @@ func main() {
 	kafkaProducer := kafkaproducer.NewKafkaProducer()
 
 	pool := readers.WorkerPool{Wg: wg}
-	requester := infrastructure.NewsRequester{Client: client}
+	requester := adapter.NewsRequester{Client: client}
 	pool.StartWorkers(ctx, newsChan, kafkaSendChan, requester)
 	app := application.Application{Ticker: time.NewTicker(5 * time.Second), RequestHandler: requester, RequestChan: newsChan}
 	wg.Go(func() { app.StartParsingNews(ctx) })

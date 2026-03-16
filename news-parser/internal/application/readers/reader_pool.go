@@ -46,14 +46,16 @@ func (w *worker) work(ctx context.Context, handler application.RequestHandler) {
 				slog.Error("error getting data from html", "url:", task.Url, "err:", err)
 				continue
 			}
-			w.results <- domain.ResultDto{Category: "category", Title: task.Title, Text: utils.NormalizeText(article.TextContent)}
+			w.results <- domain.ResultDto{Category: task.Category, Title: task.Title, Text: utils.NormalizeText(article.TextContent)}
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (pool *WorkerPool) StartWorkers(ctx context.Context, tasks chan domain.GdeltApiDto, results chan domain.ResultDto,
+func (pool *WorkerPool) StartWorkers(ctx context.Context,
+	tasks chan domain.GdeltApiDto,
+	results chan domain.ResultDto,
 	handler application.RequestHandler) {
 	pool.workers = make([]*worker, NumWorkers)
 	for i := 0; i < NumWorkers; i++ {
