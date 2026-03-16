@@ -22,7 +22,7 @@ SUMMARIZE_SYSTEM_PROMPT = r"""
   "category": "<string>",
   "summarization": "<русский текст>",
   "features": {
-    "signal_direction": "up|down|neutral|unknown",
+    "signal_direction": "up|down|neutral",
     "signal_strength": 0.0,
     "uncertainty": 0.0,
     "event_urgency_hours": 0,
@@ -41,7 +41,6 @@ SUMMARIZE_SYSTEM_PROMPT = r"""
   - up, если из текста явно следует позитивный сигнал для BTC/крипторынка;
   - down, если явно негативный;
   - neutral, если факты смешанные или слабые;
-  - unknown, если направление неясно.
 - signal_strength: 0..1, насколько событие выглядит значимым по масштабу.
 - uncertainty: 0..1, насколько описание неоднозначно, неполно или основано на неподтверждённых заявлениях.
 - event_urgency_hours: одно из значений 6, 24, 72, 168, если можно оценить.
@@ -92,7 +91,6 @@ SCORING_SYSTEM_PROMPT = r"""
 РЕКОМЕНДАЦИИ:
 - Используй signal_direction как главный знак score.
 - Учитывай signal_strength, uncertainty и event_urgency_hours.
-- Если signal_direction = unknown, score должен быть близок к 0.
 - Если uncertainty высокая, уменьшай модуль score.
 - rationale_ru должно быть 1-3 коротких предложения, без воды.
 

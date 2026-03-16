@@ -3,7 +3,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, field_validator
 
 
-SignalDirection = Literal["up", "down", "neutral", "unknown"]
+SignalDirection = Literal["up", "down", "neutral"]
 
 
 class SummarizeRequest(BaseModel):
