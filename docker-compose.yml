@@ -50,7 +50,8 @@ services:
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic articles_data --partitions 4 --replication-factor 1;
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic news_data --partitions 4 --replication-factor 1;
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic news_scores --partitions 4 --replication-factor 1;
-      
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic articles_data_clean --partitions 4 --replication-factor 1;
+
       echo 'Topics created';
       "
 
@@ -91,3 +92,20 @@ services:
       REDIS_ADDR: "valkey:6379"
       REDIS_PASSWORD: "password"
       REDIS_DB: 0
+
+  data-cleaner:
+    build:
+      context: data-cleaner
+    container_name: data-cleaner
+    depends_on:
+      - kafka-init
+      - valkey
+    restart: unless-stopped
+    environment:
+      KAFKA_BROKERS: "kafka:19092"
+      KAFKA_GROUP_ID: "news-consumers"
+      KAFKA_ARTICLES_TOPIC: "articles_data"
+      KAFKA_ARTICLES_TOPIC_CLEAN: "articles_data_clean"
+      REDIS_ADDR: "valkey:6379"
+      REDIS_PASSWORD: "password"
+      REDIS_DB: 1

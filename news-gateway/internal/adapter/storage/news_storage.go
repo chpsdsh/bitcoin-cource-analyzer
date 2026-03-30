@@ -12,8 +12,6 @@ import (
 	"news-gateway/internal/domain"
 )
 
-const redisKey = "news"
-
 type NewsStorage struct {
 	redis *redis.Client
 }
