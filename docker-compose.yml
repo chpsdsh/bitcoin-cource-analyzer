@@ -35,12 +35,57 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
 
+
+  kafka-init:
+      image: apache/kafka:3.7.0
+      depends_on:
+        - kafka
+      command: >
+        bash -c "
+     
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --list 
+       
+        echo 'Creating topics...';
+        
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic articles_data --partitions 4 --replication-factor 1;
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic news_data --partitions 4 --replication-factor 1;
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic news_scores --partitions 4 --replication-factor 1;
+        
+        echo 'Topics created';
+        "
+
+  valkey:
+    image: valkey/valkey:9.0.3
+    container_name: valkey
+    ports:
+      - "6379:6379"
+
   news-parser:
-    build: .
+    build:
+      context: news-parser
     container_name: news-parser
+    depends_on:
+      - kafka-init
+      - valkey
     restart: unless-stopped
     environment:
       KAFKA_BROKERS: "kafka:19092"
       KAFKA_ARTICLES_TOPIC: "articles_data"
       KAFKA_NEWS_TOPIC: "news_data"
       LLM_ADDRESS: "http://llm-container"
+
+
+  news-gateway:
+    build:
+      context: news-gateway
+    container_name: news-gateway
+    depends_on:
+      - kafka-init
+      - valkey
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BROKERS: "kafka:19092"
+      KAFKA_NEWS_TOPIC: "news_data"
+      KAFKA_GROUP_ID: "news-consumers"
