@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/segmentio/kafka-go"
 
@@ -12,13 +11,8 @@ import (
 	"news-gateway/internal/domain"
 )
 
-const (
-	responseMessagesCount = 20
-	kafkaRequestDuration  = 10 * time.Second
-)
-
 type StorageSender interface {
-	AddNews(ctx context.Context, dto domain.NewsDto) error
+	AddNews(ctx context.Context, dto domain.NewsDto, key string) error
 }
 
 type KafkaConsumer struct {
@@ -47,7 +41,7 @@ func (k *KafkaConsumer) StartReadingNews(ctx context.Context) error {
 			return fmt.Errorf("error unmarshalling message: %w", err)
 		}
 
-		if err = k.sender.AddNews(ctx, newsDto); err != nil {
+		if err = k.sender.AddNews(ctx, newsDto, newsDto.Category); err != nil {
 			return fmt.Errorf("error sending news: %w", err)
 		}
 	}

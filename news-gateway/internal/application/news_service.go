@@ -9,18 +9,18 @@ import (
 
 var ErrInternalError = errors.New("internal error")
 
-const newsLimit = 20
+const newsLimit = 5
 
 type Storage interface {
-	GetNews(ctx context.Context, limit int64) ([]domain.NewsDto, error)
+	GetNews(ctx context.Context, limit int64, key string) ([]domain.NewsDto, error)
 }
 
 type NewsService struct {
 	Storage Storage
 }
 
-func (n NewsService) RequestNews(ctx context.Context) ([]domain.NewsDto, error) {
-	newsDtoArr, err := n.Storage.GetNews(ctx, newsLimit)
+func (n NewsService) RequestNews(ctx context.Context, key string) ([]domain.NewsDto, error) {
+	newsDtoArr, err := n.Storage.GetNews(ctx, newsLimit, key)
 	if err != nil {
 		return nil, errors.Join(err, ErrInternalError)
 	}

@@ -35,24 +35,24 @@ func (r NewsStorage) CloseRedis() error {
 	return nil
 }
 
-func (r NewsStorage) AddNews(ctx context.Context, dto domain.NewsDto) error {
+func (r NewsStorage) AddNews(ctx context.Context, dto domain.NewsDto, key string) error {
 	data, err := json.Marshal(dto)
 	if err != nil {
 		return fmt.Errorf("marshal news: %w", err)
 	}
 
 	score := float64(time.Now().Unix())
-	r.redis.ZAdd(ctx, redisKey, redis.Z{
+	r.redis.ZAdd(ctx, key, redis.Z{
 		Score:  score,
 		Member: string(data),
 	})
 	return nil
 }
 
-func (r NewsStorage) GetNews(ctx context.Context, limit int64) ([]domain.NewsDto, error) {
+func (r NewsStorage) GetNews(ctx context.Context, limit int64, key string) ([]domain.NewsDto, error) {
 	newsDtoArr := make([]domain.NewsDto, 0, limit)
 
-	res, err := r.redis.ZRange(ctx, redisKey, 0, limit-1).Result()
+	res, err := r.redis.ZRange(ctx, key, 0, limit-1).Result()
 	if err != nil {
 		return nil, fmt.Errorf("get news: %w", err)
 	}

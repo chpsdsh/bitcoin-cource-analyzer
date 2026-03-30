@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,9 +10,12 @@ import (
 	"news-gateway/internal/domain"
 )
 
+var ErrNoCategoryPathParameter = errors.New("query should be news/{category}")
+
 type Reader interface {
-	RequestNews(ctx context.Context) ([]domain.NewsDto, error)
+	RequestNews(ctx context.Context, key string) ([]domain.NewsDto, error)
 }
+
 type NewsServer struct {
 	reader Reader
 }
@@ -21,7 +25,13 @@ func NewNewsServer(reader Reader) NewsServer {
 }
 
 func (s NewsServer) GetNews(c *gin.Context) {
-	news, err := s.reader.RequestNews(c.Request.Context())
+	category := c.Param("category")
+	if category == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": ErrNoCategoryPathParameter})
+		return
+	}
+
+	news, err := s.reader.RequestNews(c.Request.Context(), category)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
