@@ -8,7 +8,7 @@ import (
 
 var (
 	ErrRedisAddrNotSet     = errors.New("redis address should be set with REDIS_ADDR env variable")
-	ErrRedisPasswordNotSet = errors.New("redis password should be set with REDIS_PASS env variable")
+	ErrRedisPasswordNotSet = errors.New("redis password should be set with REDIS_PASSWORD env variable")
 	ErrRedisDBNotSet       = errors.New("redis db should be set with REDIS_DB env variable")
 )
 

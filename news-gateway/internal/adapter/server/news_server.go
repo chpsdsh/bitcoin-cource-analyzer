@@ -10,7 +10,7 @@ import (
 )
 
 type Reader interface {
-	ReadNews(ctx context.Context) ([]domain.NewsDto, error)
+	RequestNews(ctx context.Context) ([]domain.NewsDto, error)
 }
 type NewsServer struct {
 	reader Reader
@@ -21,7 +21,7 @@ func NewNewsServer(reader Reader) NewsServer {
 }
 
 func (s NewsServer) GetNews(c *gin.Context) {
-	news, err := s.reader.ReadNews(c.Request.Context())
+	news, err := s.reader.RequestNews(c.Request.Context())
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})

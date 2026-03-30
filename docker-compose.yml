@@ -37,22 +37,22 @@ services:
 
 
   kafka-init:
-      image: apache/kafka:3.7.0
-      depends_on:
-        - kafka
-      command: >
-        bash -c "
-     
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --list 
-       
-        echo 'Creating topics...';
-        
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic articles_data --partitions 4 --replication-factor 1;
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic news_data --partitions 4 --replication-factor 1;
-        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic news_scores --partitions 4 --replication-factor 1;
-        
-        echo 'Topics created';
-        "
+    image: apache/kafka:3.7.0
+    depends_on:
+      - kafka
+    command: >
+      bash -c "
+      
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --list 
+      
+      echo 'Creating topics...';
+      
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic articles_data --partitions 4 --replication-factor 1;
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic news_data --partitions 4 --replication-factor 1;
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic news_scores --partitions 4 --replication-factor 1;
+      
+      echo 'Topics created';
+      "
 
   valkey:
     image: valkey/valkey:9.0.3
@@ -74,7 +74,6 @@ services:
       KAFKA_NEWS_TOPIC: "news_data"
       LLM_ADDRESS: "http://llm-container"
 
-
   news-gateway:
     build:
       context: news-gateway
@@ -89,3 +88,6 @@ services:
       KAFKA_BROKERS: "kafka:19092"
       KAFKA_NEWS_TOPIC: "news_data"
       KAFKA_GROUP_ID: "news-consumers"
+      REDIS_ADDR: "valkey:6379"
+      REDIS_PASSWORD: "password"
+      REDIS_DB: 0
