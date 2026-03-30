@@ -26,15 +26,10 @@ func NewNewsServer(reader Reader) NewsServer {
 
 func (s NewsServer) GetNews(c *gin.Context) {
 	category := c.Param("category")
-	if category == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": ErrNoCategoryPathParameter})
-		return
-	}
-
 	news, err := s.reader.RequestNews(c.Request.Context(), category)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"news": news})
