@@ -4,6 +4,6 @@ WORKDIR /app
 
 COPY . .
 
-RUN go build -o app ./cmd/cleaner
+RUN go build -o app ./cmd/cacheservice
 
 CMD ["./app"]

@@ -2,15 +2,12 @@ package server
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"news-gateway/internal/domain"
 )
-
-var ErrNoCategoryPathParameter = errors.New("query should be news/{category}")
 
 type Reader interface {
 	RequestNews(ctx context.Context, key string) ([]domain.NewsDto, error)
