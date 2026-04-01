@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 
 	"github.com/segmentio/kafka-go"
 
@@ -15,12 +14,14 @@ import (
 type ArticlesHandler interface {
 	HandleArticle(ctx context.Context, article domain.ArticleDto)
 	HandleNews(ctx context.Context, news domain.NewsDto)
+	HandleLLMResponse(ctx context.Context, response domain.LLMResponse)
 }
 
 type KafkaConsumer struct {
-	articlesReader *kafka.Reader
-	newsReader     *kafka.Reader
-	handler        ArticlesHandler
+	articlesReader    *kafka.Reader
+	newsReader        *kafka.Reader
+	llmResponseReader *kafka.Reader
+	handler           ArticlesHandler
 }
 
 func NewKafkaConsumer(conf config.KafkaConfig, sender ArticlesHandler) *KafkaConsumer {
@@ -34,7 +35,17 @@ func NewKafkaConsumer(conf config.KafkaConfig, sender ArticlesHandler) *KafkaCon
 		GroupID: conf.GroupID,
 		Topic:   conf.InputNewsTopic,
 	})
-	return &KafkaConsumer{articlesReader: articlesReader, newsReader: newsReader, handler: sender}
+	llmResponseReader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers: conf.Brokers,
+		GroupID: conf.GroupID,
+		Topic:   conf.InputLLMResponseTopic,
+	})
+
+	return &KafkaConsumer{articlesReader: articlesReader,
+		newsReader:        newsReader,
+		llmResponseReader: llmResponseReader,
+		handler:           sender,
+	}
 }
 
 func (k *KafkaConsumer) StartReadingArticles(ctx context.Context) error {
@@ -48,7 +59,6 @@ func (k *KafkaConsumer) StartReadingArticles(ctx context.Context) error {
 		if err = json.Unmarshal(msg.Value, &articleDto); err != nil {
 			return fmt.Errorf("error unmarshalling message: %w", err)
 		}
-		slog.Info("new articles dto", slog.Any("articles", articleDto))
 		k.handler.HandleArticle(ctx, articleDto)
 	}
 }
@@ -64,8 +74,22 @@ func (k *KafkaConsumer) StartReadingNews(ctx context.Context) error {
 		if err = json.Unmarshal(msg.Value, &newsDto); err != nil {
 			return fmt.Errorf("error unmarshalling message: %w", err)
 		}
-		slog.Info("new articles dto", slog.Any("news", newsDto))
 		k.handler.HandleNews(ctx, newsDto)
+	}
+}
+
+func (k *KafkaConsumer) StartLLMResponse(ctx context.Context) error {
+	for {
+		msg, err := k.llmResponseReader.ReadMessage(ctx)
+		if err != nil {
+			return fmt.Errorf("error reading message: %w", err)
+		}
+
+		llmDto := domain.LLMResponse{}
+		if err = json.Unmarshal(msg.Value, &llmDto); err != nil {
+			return fmt.Errorf("error unmarshalling message: %w", err)
+		}
+		k.handler.HandleLLMResponse(ctx, llmDto)
 	}
 }
 
@@ -75,6 +99,9 @@ func (k *KafkaConsumer) Close() error {
 	}
 	if err := k.newsReader.Close(); err != nil {
 		return fmt.Errorf("close kafka news reader: %w", err)
+	}
+	if err := k.llmResponseReader.Close(); err != nil {
+		return fmt.Errorf("close kafka llm response reader: %w", err)
 	}
 	return nil
 }

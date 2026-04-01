@@ -47,6 +47,13 @@ func main() {
 		}
 	}()
 
+	go func() {
+		if err = consumer.StartLLMResponse(ctx); err != nil {
+			slog.Error("error reading llm response", slog.String("error", err.Error()))
+			cancel()
+		}
+	}()
+
 	<-ctx.Done()
 
 	if err = cache.CloseRedis(); err != nil {

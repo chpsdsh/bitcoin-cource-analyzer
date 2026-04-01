@@ -7,17 +7,19 @@ import (
 )
 
 var (
-	ErrRedisAddrNotSet       = errors.New("redis address should be set with REDIS_ADDR env variable")
-	ErrRedisPasswordNotSet   = errors.New("redis password should be set with REDIS_PASSWORD env variable")
-	ErrRedisNewsDBNotSet     = errors.New("redis db should be set with REDIS_NEWS_DB env variable")
-	ErrRedisArticlesDBNotSet = errors.New("redis db should be set with REDIS_ARTICLES_DB env variable")
+	ErrRedisAddrNotSet          = errors.New("redis address should be set with REDIS_ADDR env variable")
+	ErrRedisPasswordNotSet      = errors.New("redis password should be set with REDIS_PASSWORD env variable")
+	ErrRedisNewsDBNotSet        = errors.New("redis db should be set with REDIS_NEWS_DB env variable")
+	ErrRedisArticlesDBNotSet    = errors.New("redis db should be set with REDIS_ARTICLES_DB env variable")
+	ErrRedisLLMResponseDBNotSet = errors.New("redis db should be set with REDIS_LLM_RESPONSE_DB env variable")
 )
 
 type RedisConfig struct {
-	RedisAddr       string
-	RedisPassword   string
-	RedisArticlesDB int
-	RedisNewsDB     int
+	RedisAddr          string
+	RedisPassword      string
+	RedisArticlesDB    int
+	RedisNewsDB        int
+	RedisLLMResponseDB int
 }
 
 func NewRedisConfig() (RedisConfig, error) {
@@ -25,20 +27,32 @@ func NewRedisConfig() (RedisConfig, error) {
 	if redisAddr == "" {
 		return RedisConfig{}, ErrRedisAddrNotSet
 	}
+
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 	if redisPassword == "" {
 		return RedisConfig{}, ErrRedisPasswordNotSet
 	}
+
 	redisArticlesDB, err := strconv.Atoi(os.Getenv("REDIS_ARTICLES_DB"))
 	if err != nil {
 		return RedisConfig{}, errors.Join(ErrRedisNewsDBNotSet, err)
 	}
+
 	redisNewsDB, err := strconv.Atoi(os.Getenv("REDIS_NEWS_DB"))
 	if err != nil {
-		return RedisConfig{}, errors.Join(ErrRedisArticlesDBNotSet, err)
+		return RedisConfig{}, errors.Join(ErrRedisNewsDBNotSet, err)
 	}
-	return RedisConfig{RedisAddr: redisAddr,
-		RedisPassword:   redisPassword,
-		RedisArticlesDB: redisArticlesDB,
-		RedisNewsDB:     redisNewsDB}, nil
+
+	redisLLMResponseDB, err := strconv.Atoi(os.Getenv("REDIS_LLM_RESPONSE_DB"))
+	if err != nil {
+		return RedisConfig{}, errors.Join(ErrRedisLLMResponseDBNotSet, err)
+	}
+
+	return RedisConfig{
+		RedisAddr:          redisAddr,
+		RedisPassword:      redisPassword,
+		RedisArticlesDB:    redisArticlesDB,
+		RedisNewsDB:        redisNewsDB,
+		RedisLLMResponseDB: redisLLMResponseDB,
+	}, nil
 }
