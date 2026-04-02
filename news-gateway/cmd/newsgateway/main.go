@@ -43,6 +43,7 @@ func main() {
 	go func() {
 		if err = newsHTTPServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("listen err:", slog.String("error", err.Error()))
+			cancel()
 		}
 	}()
 

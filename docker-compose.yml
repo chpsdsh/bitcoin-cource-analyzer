@@ -92,7 +92,7 @@ services:
   cache-service:
     build:
       context: cache-service
-    container_name: data-cleaner
+    container_name: cache-service
     depends_on:
       - kafka-init
       - valkey
@@ -107,4 +107,18 @@ services:
       REDIS_PASSWORD: "password"
       REDIS_ARTICLES_DB: 0
       REDIS_NEWS_DB: 1
+      REDIS_LLM_RESPONSE_DB: 2
+
+  llm-consumer:
+    build:
+      context: llm-consumer
+    container_name: llm-consumer
+    depends_on:
+      - valkey
+    restart: unless-stopped
+    ports:
+      - "8083:8080"
+    environment:
+      REDIS_ADDR: "valkey:6379"
+      REDIS_PASSWORD: "password"
       REDIS_LLM_RESPONSE_DB: 2
