@@ -60,19 +60,33 @@ services:
     ports:
       - "6379:6379"
 
-  news-parser:
-    build:
-      context: news-parser
-    container_name: news-parser
+  valkey-seed:
+    image: valkey/valkey:9.0.3
+    container_name: valkey-seed
     depends_on:
-      - kafka-init
       - valkey
-    restart: unless-stopped
+    volumes:
+      - ./scripts/seed-articles.sh:/scripts/seed-articles.sh:ro
     environment:
-      KAFKA_BROKERS: "kafka:19092"
-      KAFKA_ARTICLES_TOPIC: "articles_data"
-      KAFKA_NEWS_TOPIC: "news_data"
-      LLM_ADDRESS: "http://llm-container:8080/predict"
+      VALKEY_HOST: "valkey"
+      VALKEY_PORT: "6379"
+      VALKEY_DB: "0"
+    command: ["sh", "/scripts/seed-articles.sh"]
+    restart: "no"
+
+#  news-parser:
+#    build:
+#      context: news-parser
+#    container_name: news-parser
+#    depends_on:
+#      - kafka-init
+#      - valkey
+#    restart: unless-stopped
+#    environment:
+#      KAFKA_BROKERS: "kafka:19092"
+#      KAFKA_ARTICLES_TOPIC: "articles_data"
+#      KAFKA_NEWS_TOPIC: "news_data"
+#      LLM_ADDRESS: "http://llm:8080/predict"
 
   news-gateway:
     build:
@@ -122,3 +136,17 @@ services:
       REDIS_ADDR: "valkey:6379"
       REDIS_PASSWORD: "password"
       REDIS_LLM_RESPONSE_DB: 2
+
+  llm:
+    build:
+      context: llm
+    container_name: llm
+    depends_on:
+      - valkey
+      - kafka-init
+    restart: unless-stopped
+    ports:
+      - "8084:8080"
+    environment:
+      REDIS_ADDR: "valkey:6379"
+      REDIS_LLM_RESPONSE_DB: 0

@@ -17,7 +17,7 @@ class Settings:
 
     redis_addr: str = os.getenv("REDIS_ADDR", "valkey:6379")
     redis_password: str = os.getenv("REDIS_PASSWORD", "")
-    redis_llm_response_db: int = int(os.getenv("REDIS_LLM_RESPONSE_DB", "2"))
+    redis_llm_response_db: int = int(os.getenv("REDIS_LLM_RESPONSE_DB", "0"))
 
     kafka_brokers: str = os.getenv("KAFKA_BROKERS", "kafka:19092")
     kafka_llm_response_topic: str = os.getenv("KAFKA_LLM_RESPONSE_TOPIC", "llm_data")

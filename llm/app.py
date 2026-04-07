@@ -1,4 +1,5 @@
 import traceback
+import threading
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from jobs import run_prediction_job
 
@@ -19,6 +20,19 @@ app = FastAPI(
     version="0.1.0",
     description="LLM microservice for category summarization and scoring",
 )
+
+
+_prediction_job_lock = threading.Lock()
+_prediction_job_running = False
+
+
+def _run_prediction_job_guarded() -> None:
+    global _prediction_job_running
+    try:
+        run_prediction_job()
+    finally:
+        with _prediction_job_lock:
+            _prediction_job_running = False
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -121,5 +135,12 @@ def full_pipeline(request: SummarizeRequest) -> dict:
     
 @app.post("/predict")
 def predict(background_tasks: BackgroundTasks) -> dict[str, str]:
-    background_tasks.add_task(run_prediction_job)
+    global _prediction_job_running
+
+    with _prediction_job_lock:
+        if _prediction_job_running:
+            return {"status": "already_running"}
+        _prediction_job_running = True
+
+    background_tasks.add_task(_run_prediction_job_guarded)
     return {"status": "accepted"}
