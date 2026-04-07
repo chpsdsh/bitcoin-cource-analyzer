@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"llm-consumer/internal/adapter/binanceclient"
 	"llm-consumer/internal/adapter/config"
 	"llm-consumer/internal/adapter/server"
 	"llm-consumer/internal/adapter/storage"
@@ -30,7 +31,8 @@ func main() {
 	defer cancel()
 
 	llmStorage := storage.NewLLMStorage(redisConf)
-	predictionService := application.NewPredictionService(llmStorage)
+	client := binanceclient.NewBinanceClient()
+	predictionService := application.NewPredictionService(llmStorage, client)
 
 	predictionServer := server.Server{Predictor: predictionService}
 	router := server.NewRouter(predictionServer)
