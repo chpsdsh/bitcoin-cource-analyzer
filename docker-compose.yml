@@ -72,7 +72,7 @@ services:
       KAFKA_BROKERS: "kafka:19092"
       KAFKA_ARTICLES_TOPIC: "articles_data"
       KAFKA_NEWS_TOPIC: "news_data"
-      LLM_ADDRESS: "http://llm-container:8080"
+      LLM_ADDRESS: "http://llm-container:8080/predict"
 
   news-gateway:
     build:
