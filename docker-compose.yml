@@ -74,19 +74,19 @@ services:
     command: ["sh", "/scripts/seed-articles.sh"]
     restart: "no"
 
-#  news-parser:
-#    build:
-#      context: news-parser
-#    container_name: news-parser
-#    depends_on:
-#      - kafka-init
-#      - valkey
-#    restart: unless-stopped
-#    environment:
-#      KAFKA_BROKERS: "kafka:19092"
-#      KAFKA_ARTICLES_TOPIC: "articles_data"
-#      KAFKA_NEWS_TOPIC: "news_data"
-#      LLM_ADDRESS: "http://llm:8080/predict"
+  news-parser:
+    build:
+      context: news-parser
+    container_name: news-parser
+    depends_on:
+      - kafka-init
+      - valkey
+    restart: unless-stopped
+    environment:
+      KAFKA_BROKERS: "kafka:19092"
+      KAFKA_ARTICLES_TOPIC: "articles_data"
+      KAFKA_NEWS_TOPIC: "news_data"
+      LLM_ADDRESS: "http://llm:8080/predict"
 
   news-gateway:
     build:
@@ -148,5 +148,12 @@ services:
     ports:
       - "8084:8080"
     environment:
+      MODEL_NAME: "Qwen/Qwen2.5-0.5B-Instruct"
+      MODEL_VERSION: "qwen2.5-0.5b-instruct"
+      DEFAULT_MAX_NEW_TOKENS: 128
+      REPAIR_MAX_NEW_TOKENS: 96
+      SCORE_MAX_NEW_TOKENS: 128
+      MAX_INPUT_CHARS_PER_NEWS: 1000
+      LLM_TOP_N: 2
       REDIS_ADDR: "valkey:6379"
       REDIS_LLM_RESPONSE_DB: 0

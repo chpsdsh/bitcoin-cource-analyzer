@@ -56,6 +56,7 @@ class LLMService:
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
                 torch_dtype=torch_dtype,
+                low_cpu_mem_usage=True,
             ).to(self.device)
             self.model.eval()
             print(

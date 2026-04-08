@@ -81,7 +81,7 @@ def run_prediction_job() -> None:
                 category=summary_result["category"],
                 summarization=summary_result["summarization"],
                 features=summary_result["features"],
-                max_new_tokens=300,
+                max_new_tokens=settings.score_max_new_tokens,
             )
             print(
                 f"[predict-job] score completed category={category} elapsed={time.perf_counter() - score_started_at:.2f}s",
