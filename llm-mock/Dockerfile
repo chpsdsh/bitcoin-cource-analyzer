@@ -3,6 +3,6 @@ FROM golang:1.25
 WORKDIR /app
 
 COPY . .
-RUN go build -o app ./cmd/newsparser
+RUN go build -o app ./cmd/llm
 
 CMD ["./app"]

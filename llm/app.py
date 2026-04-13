@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException
 import traceback
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from jobs import run_prediction_job
 
 from config import settings
 from llm import llm_service
@@ -116,3 +117,9 @@ def full_pipeline(request: SummarizeRequest) -> dict:
     except Exception as exc:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"pipeline failed: {exc}") from exc
+    
+    
+@app.post("/predict")
+def predict(background_tasks: BackgroundTasks) -> dict[str, str]:
+    background_tasks.add_task(run_prediction_job)
+    return {"status": "accepted"}

@@ -26,6 +26,5 @@ func (c LLMClient) StartLLMPrediction() error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("status code is not 200 status: %d", resp.StatusCode)
 	}
-
 	return nil
 }

@@ -36,33 +36,34 @@ func (a Application) StartParsingNews(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-a.Ticker.C:
-			for _, category := range domain.AllCategories {
-				news, err := a.RequestHandler.DoNewsRequest(category)
-				if err != nil {
-
-				}
-				stringCategory := domain.CategoryToString(category)
-
-				go func() {
-					for _, dto := range news.Articles {
-						dto.Category = stringCategory
-
-						a.RequestChan <- dto
-
-						a.NewsChan <- domain.NewsDto{Category: stringCategory,
-							Title:       dto.Title,
-							URL:         dto.URL,
-							SocialImage: dto.SocialImage}
-					}
-				}()
-				if err != nil {
-					slog.Error("error requesting news:", "err", err)
-				}
-			}
-
+			a.parseNews()
 			if err := a.LLMNotifier.StartLLMPrediction(); err != nil {
 				slog.Error("error starting llm", "err", err)
 			}
 		}
+	}
+}
+
+func (a Application) parseNews() {
+	for _, category := range domain.AllCategories {
+		news, err := a.RequestHandler.DoNewsRequest(category)
+		if err != nil {
+			slog.Error("error requesting news:", "err", err)
+			continue
+		}
+		stringCategory := domain.CategoryToString(category)
+
+		go func() {
+			for _, dto := range news.Articles {
+				dto.Category = stringCategory
+
+				a.RequestChan <- dto
+
+				a.NewsChan <- domain.NewsDto{Category: stringCategory,
+					Title:       dto.Title,
+					URL:         dto.URL,
+					SocialImage: dto.SocialImage}
+			}
+		}()
 	}
 }
