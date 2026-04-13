@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+import time
 from typing import Any
 
 import torch
@@ -15,6 +17,15 @@ class LLMService:
         self.model = None
         self.tokenizer = None
         self.model_name = settings.model_name
+        self.device = "cpu"
+        self._load_lock = threading.Lock()
+
+    def _resolve_device(self) -> tuple[str, torch.dtype]:
+        if torch.cuda.is_available():
+            return "cuda", torch.float16
+        if torch.backends.mps.is_available():
+            return "mps", torch.float16
+        return "cpu", torch.float32
 
     @property
     def is_loaded(self) -> bool:
@@ -24,12 +35,38 @@ class LLMService:
         if self.is_loaded:
             return
 
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=True)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            torch_dtype=torch.float16,
-        ).to("cuda")
-        self.model.eval()
+        with self._load_lock:
+            if self.is_loaded:
+                return
+
+            self.device, torch_dtype = self._resolve_device()
+            print(
+                f"[llm] loading model={self.model_name} device={self.device} dtype={torch_dtype}",
+                flush=True,
+            )
+            started_at = time.perf_counter()
+            print("[llm] tokenizer load started", flush=True)
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=True)
+            print(
+                f"[llm] tokenizer load completed elapsed={time.perf_counter() - started_at:.2f}s",
+                flush=True,
+            )
+            model_load_started_at = time.perf_counter()
+            print("[llm] model weights load started", flush=True)
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                torch_dtype=torch_dtype,
+                low_cpu_mem_usage=True,
+            ).to(self.device)
+            self.model.eval()
+            print(
+                f"[llm] model weights load completed elapsed={time.perf_counter() - model_load_started_at:.2f}s",
+                flush=True,
+            )
+            print(
+                f"[llm] model loaded total_elapsed={time.perf_counter() - started_at:.2f}s",
+                flush=True,
+            )
 
     def _generate_text(
         self,
@@ -38,6 +75,11 @@ class LLMService:
         max_new_tokens: int,
     ) -> str:
         self.load()
+        generation_started_at = time.perf_counter()
+        print(
+            f"[llm] generation started max_new_tokens={max_new_tokens} device={self.device}",
+            flush=True,
+        )
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -63,6 +105,10 @@ class LLMService:
 
         generated_ids = generated[0, model_inputs["input_ids"].shape[1]:]
         response = self.tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
+        print(
+            f"[llm] generation completed elapsed={time.perf_counter() - generation_started_at:.2f}s output_chars={len(response)}",
+            flush=True,
+        )
         return response
 
     def _repair_json(
@@ -72,6 +118,8 @@ class LLMService:
         system_prompt: str,
         max_new_tokens: int,
     ) -> dict[str, Any]:
+        repair_started_at = time.perf_counter()
+        print("[llm] json repair started", flush=True)
         self.load()
 
         messages = [
@@ -106,6 +154,10 @@ class LLMService:
 
         generated_ids = generated[0, model_inputs["input_ids"].shape[1]:]
         fixed = self.tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
+        print(
+            f"[llm] json repair completed elapsed={time.perf_counter() - repair_started_at:.2f}s output_chars={len(fixed)}",
+            flush=True,
+        )
         return safe_json_loads(fixed)
 
     def summarize(

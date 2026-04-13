@@ -60,7 +60,6 @@ services:
     ports:
       - "6379:6379"
 
-<<<<<<< HEAD
   valkey-seed:
     image: valkey/valkey:9.0.3
     container_name: valkey-seed
@@ -75,8 +74,6 @@ services:
     command: ["sh", "/scripts/seed-articles.sh"]
     restart: "no"
 
-=======
->>>>>>> feature/BTR-24
   news-parser:
     build:
       context: news-parser
@@ -89,11 +86,7 @@ services:
       KAFKA_BROKERS: "kafka:19092"
       KAFKA_ARTICLES_TOPIC: "articles_data"
       KAFKA_NEWS_TOPIC: "news_data"
-<<<<<<< HEAD
       LLM_ADDRESS: "http://llm:8080/predict"
-=======
-      LLM_ADDRESS: "http://llm-container:8080/predict"
->>>>>>> feature/BTR-24
 
   news-gateway:
     build:
@@ -142,7 +135,6 @@ services:
     environment:
       REDIS_ADDR: "valkey:6379"
       REDIS_PASSWORD: "password"
-<<<<<<< HEAD
       REDIS_LLM_RESPONSE_DB: 2
 
   llm:
@@ -166,15 +158,12 @@ services:
       REDIS_ADDR: "valkey:6379"
       REDIS_LLM_RESPONSE_DB: 0
 
-  web-frontend:
-    build:
-      context: web-frontend
-    container_name: web-frontend
-    depends_on:
-      - news-gateway
-      - llm-consumer
-    ports:
-      - "8085:80"
-=======
-      REDIS_LLM_RESPONSE_DB: 2
->>>>>>> feature/BTR-24
+#  web-frontend:
+#    build:
+#      context: web-frontend
+#    container_name: web-frontend
+#    depends_on:
+#      - news-gateway
+#      - llm-consumer
+#    ports:
+#      - "8085:80"
