@@ -158,12 +158,12 @@ services:
       REDIS_ADDR: "valkey:6379"
       REDIS_LLM_RESPONSE_DB: 0
 
-#  web-frontend:
-#    build:
-#      context: web-frontend
-#    container_name: web-frontend
-#    depends_on:
-#      - news-gateway
-#      - llm-consumer
-#    ports:
-#      - "8085:80"
+  web-frontend:
+   build:
+     context: web-frontend
+   container_name: web-frontend
+   depends_on:
+     - news-gateway
+     - llm-consumer
+   ports:
+     - "8085:80"

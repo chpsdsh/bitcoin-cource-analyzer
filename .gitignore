@@ -31,3 +31,5 @@ bin
 logs
 
 .txt
+
+.DS_Store

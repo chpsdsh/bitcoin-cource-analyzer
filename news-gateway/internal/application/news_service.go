@@ -13,7 +13,7 @@ var (
 )
 
 const (
-	newsLimit           = 5
+	newsLimit           = 10
 	politicsCategory    = "politics"
 	environmentCategory = "environment"
 	economyCategory     = "economy"
