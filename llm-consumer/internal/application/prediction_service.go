@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"strconv"
+	"time"
 
 	"llm-consumer/internal/domain"
 )
@@ -82,7 +83,41 @@ func (s PredictionService) DoPrediction(ctx context.Context, categories domain.C
 	}
 	rPred := calcRPred(categoriesPredictions)
 
-	return domain.Prediction{Target: btcPrice * math.Exp(rPred)}, nil
+	return domain.Prediction{
+		Target:      btcPrice * math.Exp(rPred),
+		Current:     btcPrice,
+		PredHorizon: calculatePredHorizon(),
+	}, nil
+}
+
+func calculatePredHorizon() int {
+	now := time.Now().UTC()
+
+	dayOfWeek := 0
+	if now.Weekday() == time.Thursday || now.Weekday() == time.Friday {
+		dayOfWeek = 1
+	}
+
+	month := 0
+	switch now.Month() {
+	case time.October, time.November, time.December, time.January, time.February:
+		month = 1
+	}
+
+	timeUTC := 0
+	if now.Hour() >= 13 && now.Hour() < 21 {
+		timeUTC = 1
+	}
+
+	volumeLevel := dayOfWeek + month + timeUTC
+
+	if volumeLevel == 0 {
+		return 0
+	}
+	if volumeLevel == 1 {
+		return 1
+	}
+	return 2
 }
 
 func directionToNumber(dir string) float64 {
