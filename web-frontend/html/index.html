@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title></title>
+    <title>BTR</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -400,6 +400,14 @@
         </div>
       </section>
 
+      <section class="panel">
+        <div class="news-header">
+          <h2>News Feed</h2>
+          <div class="status" id="news-status">Loading news...</div>
+        </div>
+        <div class="news-grid" id="news-grid"></div>
+      </section>
+    </main>
 
     <script>
       const categories = ["environment", "politics", "economy", "technology", "crypto"]
@@ -530,6 +538,68 @@
         }
       })
 
+      const createNewsCard = (item) => {
+        const card = document.createElement("article")
+        card.className = "news-card"
+
+        const image = document.createElement("div")
+        image.className = "news-image"
+        if (item.socialimage) {
+          image.style.backgroundImage = `url("${item.socialimage}")`
+        }
+
+        const meta = document.createElement("div")
+        meta.className = "news-meta"
+        meta.textContent = item.category
+
+        const link = document.createElement("a")
+        link.className = "news-title"
+        link.href = item.url
+        link.target = "_blank"
+        link.rel = "noopener"
+        link.textContent = item.title
+
+        card.appendChild(image)
+        card.appendChild(meta)
+        card.appendChild(link)
+        return card
+      }
+
+      const loadNews = async () => {
+        try {
+          const results = await Promise.all(
+            categories.map(async (category) => {
+              const response = await fetch(`/news/${category}`)
+              if (!response.ok) {
+                return []
+              }
+              const data = await response.json()
+              const items = Array.isArray(data.news) ? data.news : []
+              return items.map((item) => ({
+                category: item.category || category,
+                title: item.title || "Untitled",
+                url: item.url || "#",
+                socialimage: item.socialimage || item.socialImage || "",
+              }))
+            })
+          )
+
+          const flat = results.flat().slice(0, maxNewsItems)
+          newsGrid.innerHTML = ""
+
+          if (flat.length === 0) {
+            newsStatus.textContent = "No news available yet."
+            return
+          }
+
+          flat.forEach((item) => newsGrid.appendChild(createNewsCard(item)))
+          newsStatus.textContent = `Loaded ${flat.length} items`
+        } catch (error) {
+          newsStatus.textContent = "Failed to load news."
+        }
+      }
+
+      loadNews()
     </script>
   </body>
 </html>
