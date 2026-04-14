@@ -91,6 +91,26 @@ func (s PredictionService) DoPrediction(ctx context.Context, categories domain.C
 }
 
 func calculatePredHorizon() int {
+/*
+PredictHorizon computes a discrete market reaction horizon (3 levels) using simple calendar/time
+proxies of BTC/USD trading activity.
+
+Output levels:
+  0 = slow reaction
+  1 = medium reaction
+  2 = fast reaction
+
+  predHorizon = 0 if volumeLevel == 0
+              = 1 if volumeLevel == 1
+              = 2 if volumeLevel >= 2
+
+Rationale:
+  The selected windows were derived from analysis of historical volatility/activity patterns and are
+  consistent with documented time-of-day/day-of-week/month-of-year effects in Bitcoin trading activity,
+  e.g., Baur, Cahill, Godfrey & Liu (2019), "Bitcoin time-of-day, day-of-week and month-of-year effects
+  in returns and trading volume".
+*/
+	
 	now := time.Now().UTC()
 
 	dayOfWeek := 0
