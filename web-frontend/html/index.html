@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BTR</title>
+    <title></title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -388,6 +388,148 @@
         </div>
       </section>
 
-      
+      <section class="panel prediction">
+        <div>
+          <h2>Prediction</h2>
+          <div class="category-grid" id="category-grid"></div>
+        </div>
+        <div class="predict-actions">
+          <button class="predict-button" id="predict-button">Predict</button>
+          <div class="prediction-result" id="prediction-result">Select categories and run prediction.</div>
+          <div class="status" id="prediction-status"></div>
+        </div>
+      </section>
+
+
+    <script>
+      const categories = ["environment", "politics", "economy", "technology", "crypto"]
+      const categoryGrid = document.getElementById("category-grid")
+      const predictionResult = document.getElementById("prediction-result")
+      const predictionStatus = document.getElementById("prediction-status")
+      const predictButton = document.getElementById("predict-button")
+      const newsGrid = document.getElementById("news-grid")
+      const newsStatus = document.getElementById("news-status")
+      const themeToggle = document.getElementById("theme-toggle")
+      const selectedCategories = new Set()
+      const maxNewsItems = 50
+      const darkTheme = "dark"
+      const lightTheme = "light"
+
+      const applyTheme = (theme) => {
+        document.body.setAttribute("data-theme", theme)
+        themeToggle.textContent = theme === darkTheme ? "Light" : "Dark"
+      }
+
+      const savedTheme = localStorage.getItem("theme") || darkTheme
+      applyTheme(savedTheme)
+
+      themeToggle.addEventListener("click", () => {
+        const nextTheme = document.body.getAttribute("data-theme") === darkTheme ? lightTheme : darkTheme
+        applyTheme(nextTheme)
+        localStorage.setItem("theme", nextTheme)
+      })
+
+      const formatValue = (value) => {
+        if (typeof value !== "number") return "No data"
+        return value.toFixed(4)
+      }
+
+      const horizonIconSymbol = (horizon) => {
+        if (horizon === 2) {
+          return "⚡︎"
+        }
+        if (horizon === 0) {
+          return "𓆉"
+        }
+        return "⏱"
+      }
+
+      const horizonTooltipText = () => {
+        return "Prediction horizon has 3 volatility-based levels:\n𓆉 Very slow reaction (level 1)\n ⏱ Moderate reaction (level 2)\n ⚡︎ Fast reaction (level 3)"
+      }
+
+      const setupHorizonTooltip = () => {
+        const icon = predictionResult.querySelector(".horizon-icon")
+        const tooltip = predictionResult.querySelector(".horizon-tooltip")
+        if (!icon || !tooltip) return
+
+        const showTooltip = () => tooltip.classList.add("visible")
+        const hideTooltip = () => tooltip.classList.remove("visible")
+
+        icon.addEventListener("mouseenter", showTooltip)
+        icon.addEventListener("mouseleave", hideTooltip)
+        icon.addEventListener("focus", showTooltip)
+        icon.addEventListener("blur", hideTooltip)
+      }
+
+      const renderPrediction = (target, current, predHorizon) => {
+        const isUp = typeof target === "number" && typeof current === "number" ? target >= current : true
+        const arrowSymbol = isUp ? "↗" : "↘"
+        const arrowClass = isUp ? "up" : "down"
+        const tooltipText = horizonTooltipText()
+        predictionResult.innerHTML = `<div class="prediction-layout"><div class="prediction-main"><span class="prediction-arrow ${arrowClass}">${arrowSymbol}</span><span>Target: ${formatValue(target)}</span></div><span class="horizon-icon" aria-label="Prediction horizon" tabindex="0" title="${tooltipText.replace(/\n/g, " ")}"><span class="horizon-symbol">${horizonIconSymbol(predHorizon)}</span><span class="horizon-tooltip">${tooltipText}</span></span></div>`
+        setupHorizonTooltip()
+      }
+
+      const updatePredictState = () => {
+        if (selectedCategories.size === 0) {
+          predictionStatus.textContent = "Choose at least one category."
+          predictButton.disabled = false
+          return
+        }
+        predictionStatus.textContent = ""
+      }
+
+      const createButton = (category) => {
+        const button = document.createElement("button")
+        button.className = "category-button"
+        button.textContent = category
+        button.addEventListener("click", () => {
+          if (selectedCategories.has(category)) {
+            selectedCategories.delete(category)
+            button.classList.remove("active")
+          } else {
+            selectedCategories.add(category)
+            button.classList.add("active")
+          }
+          updatePredictState()
+        })
+        return button
+      }
+
+      categories.forEach((category) => categoryGrid.appendChild(createButton(category)))
+      updatePredictState()
+
+      predictButton.addEventListener("click", async () => {
+        if (selectedCategories.size === 0) {
+          predictionStatus.textContent = "Choose at least one category."
+          return
+        }
+
+        predictButton.disabled = true
+        predictionStatus.textContent = "Requesting prediction..."
+        predictionResult.textContent = "Waiting for response..."
+        try {
+          const response = await fetch("/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ categoriesList: Array.from(selectedCategories) }),
+          })
+          if (!response.ok) {
+            const errorText = await response.text()
+            throw new Error(errorText || "Prediction error")
+          }
+          const data = await response.json()
+          renderPrediction(data.target, data.current, data.pred_horizon)
+          predictionStatus.textContent = "Prediction updated."
+        } catch (error) {
+          predictionResult.textContent = "Prediction failed."
+          predictionStatus.textContent = error.message
+        } finally {
+          predictButton.disabled = false
+        }
+      })
+
+    </script>
   </body>
 </html>
