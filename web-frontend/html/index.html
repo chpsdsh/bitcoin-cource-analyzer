@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BTR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #0b0d10;
+        --panel: rgba(18, 21, 27, 0.9);
+        --panel-strong: rgba(20, 24, 31, 0.98);
+        --text: #f3f5f7;
+        --muted: #a6b0bd;
+        --accent: #5ef0c8;
+        --accent-2: #4aa3ff;
+        --accent-3: #ffb06b;
+        --border: rgba(255, 255, 255, 0.08);
+        --shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+      }
+
+      body[data-theme="light"] {
+        --bg: #f3f5f8;
+        --panel: rgba(255, 255, 255, 0.94);
+        --panel-strong: rgba(255, 255, 255, 0.98);
+        --text: #141a24;
+        --muted: #5c6777;
+        --accent: #009f7a;
+        --accent-2: #1f78d1;
+        --accent-3: #ce7a31;
+        --border: rgba(16, 23, 31, 0.12);
+        --shadow: 0 24px 50px rgba(14, 23, 35, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", "Plus Jakarta Sans", sans-serif;
+        color: var(--text);
+        background: radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, var(--accent) 25%, transparent), transparent),
+          radial-gradient(900px 700px at 90% 10%, color-mix(in srgb, var(--accent-2) 20%, transparent), transparent),
+          linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 85%, #000) 100%);
+        min-height: 100vh;
+        transition: background 0.3s ease, color 0.3s ease;
+      }
+
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 20px 60px;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+      }
+
+      header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-direction: row;
+        gap: 10px;
+      }
+
+      .header-text {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .theme-toggle {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+
+      .title {
+        font-size: clamp(28px, 3.4vw, 44px);
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        font-size: 16px;
+        max-width: 720px;
+        line-height: 1.6;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        padding: 22px;
+      }
+
+      .chart-panel {
+        padding: 10px;
+        border-radius: 20px;
+        overflow: hidden;
+      }
+
+      .prediction {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) minmax(240px, 1fr);
+        gap: 20px;
+        align-items: center;
+      }
+
+      .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+      }
+
+      .category-button {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        color: var(--text);
+        padding: 12px 14px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      }
+
+      .category-button.active {
+        background: linear-gradient(135deg, rgba(94, 240, 200, 0.15), rgba(74, 163, 255, 0.2));
+        border-color: rgba(94, 240, 200, 0.8);
+        transform: translateY(-1px);
+      }
+
+      .predict-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        align-items: flex-start;
+      }
+
+      .predict-button {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #051014;
+        border: none;
+        border-radius: 999px;
+        padding: 12px 26px;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 15px 30px rgba(94, 240, 200, 0.25);
+      }
+
+      .predict-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .prediction-result {
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--text);
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+      }
+
+      .prediction-layout {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 10px;
+      }
+
+      .prediction-main {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .prediction-arrow {
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      .prediction-arrow.up {
+        color: #47d88c;
+      }
+
+      .prediction-arrow.down {
+        color: #ff5e6b;
+      }
+
+      .horizon-icon {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--text);
+        position: relative;
+        cursor: help;
+      }
+
+      .horizon-symbol {
+        font-size: 16px;
+        line-height: 1;
+      }
+
+      .horizon-tooltip {
+        position: absolute;
+        left: 50%;
+        bottom: calc(100% + 10px);
+        transform: translateX(-50%);
+        width: 280px;
+        max-width: 80vw;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--panel-strong);
+        color: var(--text);
+        font-size: 12px;
+        line-height: 1.45;
+        box-shadow: var(--shadow);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s ease;
+        z-index: 20;
+        white-space: pre-line;
+      }
+
+      .horizon-icon:hover .horizon-tooltip {
+        opacity: 1;
+      }
+
+      .horizon-icon:focus .horizon-tooltip,
+      .horizon-icon:focus-within .horizon-tooltip,
+      .horizon-tooltip.visible {
+        opacity: 1;
+      }
+
+      .news-header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .news-header h2 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+      }
+
+      .news-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .news-card {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background: var(--panel-strong);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 14px;
+        min-height: 240px;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+      }
+
+      .news-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(94, 240, 200, 0.4);
+      }
+
+      .news-image {
+        border-radius: 12px;
+        height: 140px;
+        background-size: cover;
+        background-position: center;
+        background-image: linear-gradient(135deg, rgba(94, 240, 200, 0.2), rgba(74, 163, 255, 0.25));
+      }
+
+      .news-title {
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 600;
+        line-height: 1.4;
+      }
+
+      .news-title:hover {
+        color: var(--accent);
+      }
+
+      .news-meta {
+        font-size: 12px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+      }
+
+      .status {
+        color: var(--muted);
+        font-size: 14px;
+        margin-top: 10px;
+      }
+
+      @media (max-width: 900px) {
+        .prediction {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="header-text">
+          <div class="title">BTR — Bitcoin Trend Recon</div>
+          <div class="subtitle">Market context, model predictions, and curated news by category in one place.</div>
+        </div>
+        <button class="theme-toggle" id="theme-toggle">Light</button>
+      </header>
+
+      <section class="panel chart-panel">
+        <div class="tradingview-widget-container" style="height: 760px; width: 100%">
+          <div class="tradingview-widget-container__widget" style="height: calc(100% - 32px); width: 100%"></div>
+          <div class="tradingview-widget-copyright" style="height: calc(100% - 32px); width: 100%">
+            <a href="https://www.tradingview.com/symbols/BTCUSD/?exchange=BINANCE" rel="noopener nofollow" target="_blank">
+              <span class="blue-text">Bitcoin price</span>
+            </a>
+            <span class="trademark"> by TradingView</span>
+          </div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+            {
+            "allow_symbol_change": true,
+            "calendar": false,
+            "details": false,
+            "hide_side_toolbar": true,
+            "hide_top_toolbar": false,
+            "hide_legend": false,
+            "hide_volume": false,
+            "hotlist": false,
+            "interval": "1",
+            "locale": "en",
+            "save_image": true,
+            "style": "1",
+            "symbol": "BINANCE:BTCUSD",
+            "theme": "dark",
+            "timezone": "Etc/UTC",
+            "backgroundColor": "#0F0F0F",
+            "gridColor": "rgba(242, 242, 242, 0.06)",
+            "watchlist": [],
+            "withdateranges": false,
+            "compareSymbols": [],
+            "studies": [],
+            "autosize": true
+            }
+          </script>
+        </div>
+      </section>
+
+      
+  </body>
+</html>
