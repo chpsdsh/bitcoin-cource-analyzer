@@ -34,7 +34,7 @@ func main() {
 	defer cancel()
 
 	wg := &sync.WaitGroup{}
-	newsChan := make(chan domain.GdeltApiDto, application.NewsRequestsCount)
+	newsChan := make(chan domain.GdeltAPIDto, application.NewsRequestsCount)
 	kafkaArticlesSendChan := make(chan domain.ArticleDto, application.NewsRequestsCount)
 	kafkaNewsSendChan := make(chan domain.NewsDto, application.NewsRequestsCount)
 

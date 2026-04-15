@@ -21,7 +21,7 @@ type KafkaSender struct {
 }
 
 func NewSenderPool(ctx context.Context, wg *sync.WaitGroup, articles chan domain.ArticleDto, news chan domain.NewsDto, producer Sender) {
-	for i := 0; i < NumKafkaSenders; i++ {
+	for range NumKafkaSenders {
 		worker := KafkaSender{articles: articles, news: news, producer: producer}
 		wg.Go(func() { worker.sendDataToKafka(ctx) })
 	}

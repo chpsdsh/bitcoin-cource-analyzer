@@ -27,9 +27,9 @@ func NewRedisConfig() (RedisConfig, error) {
 	if redisPassword == "" {
 		return RedisConfig{}, ErrRedisPasswordNotSet
 	}
-	redisDb, err := strconv.Atoi(os.Getenv("REDIS_LLM_RESPONSE_DB"))
+	redisDB, err := strconv.Atoi(os.Getenv("REDIS_LLM_RESPONSE_DB"))
 	if err != nil {
 		return RedisConfig{}, errors.Join(ErrRedisDBNotSet, err)
 	}
-	return RedisConfig{RedisAddr: redisAddr, RedisPassword: redisPassword, RedisDB: redisDb}, nil
+	return RedisConfig{RedisAddr: redisAddr, RedisPassword: redisPassword, RedisDB: redisDB}, nil
 }

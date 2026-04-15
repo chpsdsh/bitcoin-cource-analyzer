@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	kafkaSendTimeout = time.Second * 15
+	kafkaSendTimeout     = time.Second * 15
+	kafkaErrsArrCapacity = 2
 )
 
 type KafkaProducer struct {
@@ -79,7 +80,7 @@ func (p KafkaProducer) SendNews(dto domain.NewsDto) {
 
 func (p KafkaProducer) Close() error {
 	slog.Info("closing kafka producer")
-	errs := make([]error, 2)
+	errs := make([]error, 0, kafkaErrsArrCapacity)
 	errs = append(errs, p.articlesWriter.Close())
 	errs = append(errs, p.newsWriter.Close())
 	return errors.Join(errs...)

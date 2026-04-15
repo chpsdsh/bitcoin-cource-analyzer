@@ -22,7 +22,7 @@ type WorkerPool struct {
 }
 
 type worker struct {
-	tasks   chan domain.GdeltApiDto
+	tasks   chan domain.GdeltAPIDto
 	results chan domain.ArticleDto
 }
 
@@ -33,7 +33,7 @@ func (w *worker) work(ctx context.Context, handler application.RequestHandler) {
 			if !ok {
 				return
 			}
-			requestUrl, err := url.Parse(task.URL)
+			requestURL, err := url.Parse(task.URL)
 			if err != nil {
 				continue
 			}
@@ -42,7 +42,7 @@ func (w *worker) work(ctx context.Context, handler application.RequestHandler) {
 				slog.Error("error requesting data", "url:", task.URL, "err:", err)
 				continue
 			}
-			article, err := readability.FromReader(bytes.NewReader(data), requestUrl)
+			article, err := readability.FromReader(bytes.NewReader(data), requestURL)
 			if err != nil {
 				slog.Error("error getting data from html", "url:", task.URL, "err:", err)
 				continue
@@ -55,11 +55,11 @@ func (w *worker) work(ctx context.Context, handler application.RequestHandler) {
 }
 
 func (pool *WorkerPool) StartWorkers(ctx context.Context,
-	tasks chan domain.GdeltApiDto,
+	tasks chan domain.GdeltAPIDto,
 	results chan domain.ArticleDto,
 	handler application.RequestHandler) {
 	pool.workers = make([]*worker, NumWorkers)
-	for i := 0; i < NumWorkers; i++ {
+	for i := range NumWorkers {
 		pool.workers[i] = &worker{tasks: tasks, results: results}
 		pool.Wg.Go(func() {
 			pool.workers[i].work(ctx, handler)

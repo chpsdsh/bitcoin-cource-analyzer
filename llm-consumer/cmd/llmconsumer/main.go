@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
@@ -42,7 +43,7 @@ func main() {
 	}
 
 	go func() {
-		if err = predictorHTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err = predictorHTTPServer.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
 			slog.Error("listen err:", slog.String("error", err.Error()))
 			cancel()
 		}

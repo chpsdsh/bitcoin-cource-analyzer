@@ -50,7 +50,12 @@ func (r NewsStorage) AddNews(ctx context.Context, dto domain.NewsDto, key string
 func (r NewsStorage) GetNews(ctx context.Context, limit int64, key string) ([]domain.NewsDto, error) {
 	newsDtoArr := make([]domain.NewsDto, 0, limit)
 
-	res, err := r.redis.ZRevRange(ctx, key, 0, limit-1).Result()
+	res, err := r.redis.ZRangeArgs(ctx, redis.ZRangeArgs{
+		Key:   key,
+		Start: 0,
+		Stop:  limit - 1,
+		Rev:   true,
+	}).Result()
 	if err != nil {
 		return nil, fmt.Errorf("get news: %w", err)
 	}
