@@ -23,7 +23,7 @@ type Application struct {
 	Ticker         *time.Ticker
 	RequestHandler RequestHandler
 	LLMNotifier    LLMNotifier
-	RequestChan    chan domain.GdeltApiDto
+	RequestChan    chan domain.GdeltAPIDto
 	NewsChan       chan domain.NewsDto
 }
 

@@ -1,9 +1,9 @@
 package domain
 
 type Articles struct {
-	Articles []GdeltApiDto `json:"articles"`
+	Articles []GdeltAPIDto `json:"articles"`
 }
-type GdeltApiDto struct {
+type GdeltAPIDto struct {
 	Category    string `json:"category"`
 	SocialImage string `json:"socialimage"`
 	URL         string `json:"url"`

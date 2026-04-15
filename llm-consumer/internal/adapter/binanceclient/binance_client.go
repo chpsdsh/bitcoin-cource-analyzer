@@ -1,6 +1,7 @@
 package binanceclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,7 +26,7 @@ func NewBinanceClient() *BinanceClient {
 }
 
 func (c BinanceClient) RequestBTCPrice() (domain.PriceResponse, error) {
-	req, err := http.NewRequest(http.MethodGet, btcURL, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, btcURL, nil)
 	if err != nil {
 		return domain.PriceResponse{}, fmt.Errorf("could not create request: %w", err)
 	}

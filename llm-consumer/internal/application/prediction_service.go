@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -27,6 +28,9 @@ const (
 	neutralDirection      = "neutral"
 	defaultCategoryWeight = 1.0
 	rMax                  = 0.03
+	slowReaction          = 0
+	mediumReaction        = 1
+	fastReaction          = 2
 )
 
 type CryptoClient interface {
@@ -65,7 +69,7 @@ func (s PredictionService) ValidateCategories(categories domain.Categories) erro
 func (s PredictionService) DoPrediction(ctx context.Context, categories domain.Categories) (domain.Prediction, error) {
 	priceDto, err := s.client.RequestBTCPrice()
 	if err != nil {
-		return domain.Prediction{}, err
+		return domain.Prediction{}, fmt.Errorf("request btc price: %w", err)
 	}
 	btcPrice, err := strconv.ParseFloat(priceDto.Price, 64)
 	if err != nil {
@@ -91,26 +95,26 @@ func (s PredictionService) DoPrediction(ctx context.Context, categories domain.C
 }
 
 func calculatePredHorizon() int {
-/*
-PredictHorizon computes a discrete market reaction horizon (3 levels) using simple calendar/time
-proxies of BTC/USD trading activity.
+	/*
+	   PredictHorizon computes a discrete market reaction horizon (3 levels) using simple calendar/time
+	   proxies of BTC/USD trading activity.
 
-Output levels:
-  0 = slow reaction
-  1 = medium reaction
-  2 = fast reaction
+	   Output levels:
+	     0 = slow reaction
+	     1 = medium reaction
+	     2 = fast reaction
 
-  predHorizon = 0 if volumeLevel == 0
-              = 1 if volumeLevel == 1
-              = 2 if volumeLevel >= 2
+	     predHorizon = 0 if volumeLevel == 0
+	                 = 1 if volumeLevel == 1
+	                 = 2 if volumeLevel >= 2
 
-Rationale:
-  The selected windows were derived from analysis of historical volatility/activity patterns and are
-  consistent with documented time-of-day/day-of-week/month-of-year effects in Bitcoin trading activity,
-  e.g., Baur, Cahill, Godfrey & Liu (2019), "Bitcoin time-of-day, day-of-week and month-of-year effects
-  in returns and trading volume".
-*/
-	
+	   Rationale:
+	     The selected windows were derived from analysis of historical volatility/activity patterns and are
+	     consistent with documented time-of-day/day-of-week/month-of-year effects in Bitcoin trading activity,
+	     e.g., Baur, Cahill, Godfrey & Liu (2019), "Bitcoin time-of-day, day-of-week and month-of-year effects
+	     in returns and trading volume".
+	*/
+
 	now := time.Now().UTC()
 
 	dayOfWeek := 0
@@ -118,10 +122,13 @@ Rationale:
 		dayOfWeek = 1
 	}
 
-	month := 0
+	var month int
+
 	switch now.Month() {
 	case time.October, time.November, time.December, time.January, time.February:
 		month = 1
+	case time.March, time.April, time.May, time.June, time.July, time.August, time.September:
+		month = 0
 	}
 
 	timeUTC := 0
@@ -135,9 +142,9 @@ Rationale:
 		return 0
 	}
 	if volumeLevel == 1 {
-		return 1
+		return mediumReaction
 	}
-	return 2
+	return fastReaction
 }
 
 func directionToNumber(dir string) float64 {

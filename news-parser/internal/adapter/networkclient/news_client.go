@@ -1,6 +1,7 @@
 package networkclient
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,7 +25,7 @@ type NewsRequester struct {
 
 func (nr NewsRequester) DoNewsRequest(category domain.Category) (domain.Articles, error) {
 	URL := urlByCategory(category)
-	req, err := http.NewRequest(http.MethodGet, URL, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, URL, nil)
 	if err != nil {
 		return domain.Articles{}, fmt.Errorf("error creating request %w", err)
 	}
@@ -48,7 +49,7 @@ func (nr NewsRequester) DoNewsRequest(category domain.Category) (domain.Articles
 }
 
 func (nr NewsRequester) DoDataRequest(url string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request %w", err)
 	}
