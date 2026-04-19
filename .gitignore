@@ -33,3 +33,7 @@ logs
 .txt
 
 .DS_Store
+node_modules
+
+cypress/screenshots
+cypress/videos

@@ -27,6 +27,44 @@ After startup:
 - LLM service: `http://localhost:8084`
 - Kafka UI: `http://localhost:8091`
 
+## Frontend E2E
+
+The repository now includes Cypress-based E2E tests for the static frontend.
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the suite:
+
+```bash
+npm run test:e2e
+```
+
+Force Chrome on macOS:
+
+```bash
+npm run test:e2e:chrome
+```
+
+Force WebKit on macOS:
+
+```bash
+npm run test:e2e:webkit
+```
+
+Open Cypress locally:
+
+```bash
+npm run cy:open
+```
+
+The Cypress config starts a lightweight local static server for `web-frontend/html`, so Docker services are not required for the frontend E2E suite. API calls are stubbed with Cypress intercepts.
+
+On macOS, the Cypress launcher prefers installed browsers like Chrome or Firefox. If they are not available, it falls back to Cypress WebKit support, which makes the setup friendlier for Apple Silicon MacBooks that only have Safari/WebKit available by default.
+
 
 ## CI
 

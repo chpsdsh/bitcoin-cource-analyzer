@@ -8,6 +8,10 @@ on:
     paths:
       - ".github/workflows/ci.yml"
       - "cache-service/**"
+      - "cypress/**"
+      - "cypress.config.js"
+      - "package.json"
+      - "package-lock.json"
       - "llm-consumer/**"
       - "llm/**"
       - "news-gateway/**"
@@ -106,6 +110,45 @@ jobs:
           context: ./web-frontend
           file: ./web-frontend/Dockerfile
           push: false
+
+  frontend-e2e:
+    name: Frontend E2E
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start frontend via Docker Compose
+        run: docker compose up -d --build web-frontend
+
+      - name: Wait for frontend to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8085 >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose ps
+          docker compose logs web-frontend
+          exit 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install frontend E2E dependencies
+        run: npm ci
+
+      - name: Run Cypress E2E suite
+        run: CYPRESS_BROWSER=chrome npm run test:e2e
+
+      - name: Stop Docker Compose
+        if: always()
+        run: docker compose down
 
   compose-validate:
     name: Compose Validate

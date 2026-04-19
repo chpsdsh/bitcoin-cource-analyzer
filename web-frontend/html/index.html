@@ -347,7 +347,7 @@
           <div class="title">BTR — Bitcoin Trend Recon</div>
           <div class="subtitle">Market context, model predictions, and curated news by category in one place.</div>
         </div>
-        <button class="theme-toggle" id="theme-toggle">Light</button>
+        <button class="theme-toggle" id="theme-toggle" data-cy="theme-toggle">Light</button>
       </header>
 
       <section class="panel chart-panel">
@@ -391,21 +391,21 @@
       <section class="panel prediction">
         <div>
           <h2>Prediction</h2>
-          <div class="category-grid" id="category-grid"></div>
+          <div class="category-grid" id="category-grid" data-cy="category-grid"></div>
         </div>
         <div class="predict-actions">
-          <button class="predict-button" id="predict-button">Predict</button>
-          <div class="prediction-result" id="prediction-result">Select categories and run prediction.</div>
-          <div class="status" id="prediction-status"></div>
+          <button class="predict-button" id="predict-button" data-cy="predict-button">Predict</button>
+          <div class="prediction-result" id="prediction-result" data-cy="prediction-result">Select categories and run prediction.</div>
+          <div class="status" id="prediction-status" data-cy="prediction-status"></div>
         </div>
       </section>
 
       <section class="panel">
         <div class="news-header">
           <h2>News Feed</h2>
-          <div class="status" id="news-status">Loading news...</div>
+          <div class="status" id="news-status" data-cy="news-status">Loading news...</div>
         </div>
-        <div class="news-grid" id="news-grid"></div>
+        <div class="news-grid" id="news-grid" data-cy="news-grid"></div>
       </section>
     </main>
 
@@ -492,6 +492,8 @@
         const button = document.createElement("button")
         button.className = "category-button"
         button.textContent = category
+        button.dataset.cy = "category-button"
+        button.dataset.category = category
         button.addEventListener("click", () => {
           if (selectedCategories.has(category)) {
             selectedCategories.delete(category)
@@ -541,9 +543,12 @@
       const createNewsCard = (item) => {
         const card = document.createElement("article")
         card.className = "news-card"
+        card.dataset.cy = "news-card"
+        card.dataset.category = item.category
 
         const image = document.createElement("div")
         image.className = "news-image"
+        image.dataset.cy = "news-image"
         if (item.socialimage) {
           image.style.backgroundImage = `url("${item.socialimage}")`
         }
@@ -554,6 +559,7 @@
 
         const link = document.createElement("a")
         link.className = "news-title"
+        link.dataset.cy = "news-title"
         link.href = item.url
         link.target = "_blank"
         link.rel = "noopener"
