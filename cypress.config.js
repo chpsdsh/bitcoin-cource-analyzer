@@ -1,6 +1,6 @@
 const { defineConfig } = require("cypress")
 
-const host = "127.0.0.1"
+const host = "localhost"
 const port = 8085
 
 module.exports = defineConfig({

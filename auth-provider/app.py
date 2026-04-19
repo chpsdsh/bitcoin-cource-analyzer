@@ -22,7 +22,7 @@ data_dir.mkdir(parents=True, exist_ok=True)
 users_path = data_dir / "users.json"
 signing_key_path = data_dir / "signing-key.pem"
 
-public_issuer = os.getenv("AUTH_PROVIDER_PUBLIC_ISSUER", "http://host.docker.internal:8086")
+public_issuer = os.getenv("AUTH_PROVIDER_PUBLIC_ISSUER", "http://localhost:8086")
 client_id = os.getenv("AUTH_PROVIDER_CLIENT_ID", "btr-local-client")
 client_secret = os.getenv("AUTH_PROVIDER_CLIENT_SECRET", "btr-local-secret")
 session_cookie_name = "btr_idp_session"
@@ -386,7 +386,7 @@ def jwks() -> dict[str, list[dict[str, str]]]:
     return {"keys": [public_jwk()]}
 
 
-@app.get("/authorize")
+@app.get("/authorize", response_model=None)
 def authorize(request: Request) -> HTMLResponse | RedirectResponse:
     query = auth_query_from_request(request)
     validate_client(query["client_id"])
@@ -418,7 +418,7 @@ def authorize(request: Request) -> HTMLResponse | RedirectResponse:
     return RedirectResponse(url=f"{query['redirect_uri']}?{urlencode(redirect_params)}", status_code=302)
 
 
-@app.post("/register")
+@app.post("/register", response_model=None)
 def register(
     email: str = Form(...),
     password: str = Form(...),
@@ -463,7 +463,7 @@ def register(
     return response
 
 
-@app.post("/login")
+@app.post("/login", response_model=None)
 def login(
     email: str = Form(...),
     password: str = Form(...),
@@ -581,7 +581,11 @@ def userinfo(request: Request) -> JSONResponse:
 
 
 @app.get("/logout")
-def logout(rd: str = "/") -> RedirectResponse:
+def logout(request: Request, rd: str = "/") -> RedirectResponse:
+    session_id = request.cookies.get(session_cookie_name)
+    if session_id:
+        sessions.pop(session_id, None)
+
     response = RedirectResponse(url=rd, status_code=302)
     response.delete_cookie(session_cookie_name, path="/")
     return response

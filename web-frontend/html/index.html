@@ -387,7 +387,7 @@
         <div class="header-actions">
           <div class="session-summary" id="session-summary" data-cy="session-summary">Authorized access only.</div>
           <div class="header-buttons">
-            <a class="theme-toggle logout-link" id="logout-link" data-cy="logout-link" href="/oauth2/sign_out?rd=http%3A%2F%2Fhost.docker.internal%3A8086%2Flogout%3Frd%3Dhttp%253A%252F%252Flocalhost%253A8085%252F">Logout</a>
+            <a class="theme-toggle logout-link" id="logout-link" data-cy="logout-link" href="#">Logout</a>
             <button class="theme-toggle" id="theme-toggle" data-cy="theme-toggle">Light</button>
           </div>
         </div>
@@ -461,11 +461,15 @@
       const newsGrid = document.getElementById("news-grid")
       const newsStatus = document.getElementById("news-status")
       const themeToggle = document.getElementById("theme-toggle")
+      const logoutLink = document.getElementById("logout-link")
       const sessionSummary = document.getElementById("session-summary")
       const selectedCategories = new Set()
       const maxNewsItems = 50
       const darkTheme = "dark"
       const lightTheme = "light"
+      const authProviderOrigin = `${window.location.protocol}//${window.location.hostname}:8086`
+
+      logoutLink.href = `/oauth2/sign_out?rd=${encodeURIComponent(`${authProviderOrigin}/logout?rd=${encodeURIComponent(`${window.location.origin}/`)}`)}`
 
       const applyTheme = (theme) => {
         document.body.setAttribute("data-theme", theme)

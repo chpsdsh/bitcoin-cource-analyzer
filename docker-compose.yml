@@ -7,7 +7,7 @@ services:
     ports:
       - "8086:8080"
     environment:
-      AUTH_PROVIDER_PUBLIC_ISSUER: "${AUTH_PROVIDER_PUBLIC_ISSUER:-http://host.docker.internal:8086}"
+      AUTH_PROVIDER_PUBLIC_ISSUER: "${AUTH_PROVIDER_PUBLIC_ISSUER:-http://localhost:8086}"
       AUTH_PROVIDER_CLIENT_ID: "${AUTH_PROVIDER_CLIENT_ID:-btr-local-client}"
       AUTH_PROVIDER_CLIENT_SECRET: "${AUTH_PROVIDER_CLIENT_SECRET:-btr-local-secret}"
       AUTH_PROVIDER_COOKIE_SECURE: "${AUTH_PROVIDER_COOKIE_SECURE:-false}"
@@ -179,7 +179,11 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       OAUTH2_PROXY_PROVIDER: "${OAUTH2_PROXY_PROVIDER:-oidc}"
-      OAUTH2_PROXY_OIDC_ISSUER_URL: "${OAUTH2_PROXY_OIDC_ISSUER_URL:-http://host.docker.internal:8086}"
+      OAUTH2_PROXY_OIDC_ISSUER_URL: "${OAUTH2_PROXY_OIDC_ISSUER_URL:-http://localhost:8086}"
+      OAUTH2_PROXY_SKIP_OIDC_DISCOVERY: "true"
+      OAUTH2_PROXY_LOGIN_URL: "${OAUTH2_PROXY_LOGIN_URL:-http://localhost:8086/authorize}"
+      OAUTH2_PROXY_REDEEM_URL: "${OAUTH2_PROXY_REDEEM_URL:-http://auth-provider:8080/token}"
+      OAUTH2_PROXY_OIDC_JWKS_URL: "${OAUTH2_PROXY_OIDC_JWKS_URL:-http://auth-provider:8080/jwks.json}"
       OAUTH2_PROXY_CLIENT_ID: "${OAUTH2_PROXY_CLIENT_ID:-btr-local-client}"
       OAUTH2_PROXY_CLIENT_SECRET: "${OAUTH2_PROXY_CLIENT_SECRET:-btr-local-secret}"
       OAUTH2_PROXY_COOKIE_SECRET: "${OAUTH2_PROXY_COOKIE_SECRET:-sBz2mI8QZ0Ih1x8nV9gL5dWf4JqR7uYp4A1kC6tN3eM}"
@@ -188,7 +192,7 @@ services:
       OAUTH2_PROXY_REDIRECT_URL: "${OAUTH2_PROXY_REDIRECT_URL:-http://localhost:8085/oauth2/callback}"
       OAUTH2_PROXY_SCOPE: "${OAUTH2_PROXY_SCOPE:-openid profile email}"
       OAUTH2_PROXY_EMAIL_DOMAINS: "${OAUTH2_PROXY_EMAIL_DOMAINS:-*}"
-      OAUTH2_PROXY_WHITELIST_DOMAINS: "${OAUTH2_PROXY_WHITELIST_DOMAINS:-localhost:8085,host.docker.internal:8086}"
+      OAUTH2_PROXY_WHITELIST_DOMAINS: "${OAUTH2_PROXY_WHITELIST_DOMAINS:-localhost:8085,localhost:8086}"
       OAUTH2_PROXY_COOKIE_SECURE: "${OAUTH2_PROXY_COOKIE_SECURE:-false}"
       OAUTH2_PROXY_COOKIE_SAMESITE: "lax"
       OAUTH2_PROXY_REVERSE_PROXY: "true"
@@ -209,6 +213,7 @@ services:
      - news-gateway
      - llm-consumer
      - oauth2-proxy
+   restart: unless-stopped
    ports:
      - "8085:80"
 
