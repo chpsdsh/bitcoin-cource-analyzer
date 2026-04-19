@@ -22,10 +22,41 @@ Available commands:
 After startup:
 
 - Frontend: `http://localhost:8085`
-- News gateway: `http://localhost:8080`
-- LLM consumer: `http://localhost:8083`
-- LLM service: `http://localhost:8084`
+- Local OIDC provider: `http://localhost:8086`
 - Kafka UI: `http://localhost:8091`
+
+## OAuth Access
+
+The frontend is protected by `oauth2-proxy` in front of Nginx.
+Unauthenticated users are redirected to the OAuth provider before they can open the site, load news, or call prediction endpoints.
+
+Default behavior:
+
+- `./scripts/project.sh up` works without any extra setup.
+- The stack includes a built-in local OIDC provider with registration and login pages.
+- Open `http://localhost:8085`, create an account, and the app will continue after OAuth login.
+- User accounts are stored in a lightweight local JSON-backed volume, not in an external database.
+
+Optional external provider setup:
+
+- Copy `.env.example` to `.env`
+- Replace the default local OIDC values with your external provider values
+- Keep the callback URL as:
+
+```text
+http://localhost:8085/oauth2/callback
+```
+
+Generate a cookie secret for external provider usage with:
+
+```bash
+python -c 'import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())'
+```
+
+Security notes:
+
+- `news-gateway`, `llm-consumer`, and `llm` are no longer published to host ports, so app functionality is available only through the authenticated frontend.
+- The built-in local OIDC provider is intended for project/dev usage. For production, override it with a real external OIDC provider in `.env`.
 
 ## Frontend E2E
 

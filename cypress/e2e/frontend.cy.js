@@ -18,9 +18,21 @@ const mockNewsFeed = () => {
   })
 }
 
+const mockSession = () => {
+  cy.intercept("GET", "/session", {
+    statusCode: 200,
+    body: {
+      user: "btc-operator",
+      email: "trader@example.com",
+    },
+  }).as("session")
+}
+
 const visitApp = () => {
+  mockSession()
   mockNewsFeed()
   cy.visit("/")
+  cy.wait("@session")
   categories.forEach((category) => cy.wait(`@news-${category}`))
 }
 
@@ -45,12 +57,21 @@ describe("Bitcoin Trend Recon frontend", () => {
     cy.get("body").should("have.attr", "data-theme", "light")
     cy.window().its("localStorage.theme").should("eq", "light")
 
+    mockSession()
     mockNewsFeed()
     cy.reload()
+    cy.wait("@session")
     categories.forEach((category) => cy.wait(`@news-${category}`))
 
     cy.get("body").should("have.attr", "data-theme", "light")
     cy.get('[data-cy="theme-toggle"]').should("have.text", "Dark")
+  })
+
+  it("shows the authenticated identity and logout entrypoint", () => {
+    visitApp()
+
+    cy.get('[data-cy="session-summary"]').should("contain.text", "Signed in as trader@example.com")
+    cy.get('[data-cy="logout-link"]').should("have.attr", "href").and("contain", "/oauth2/sign_out?rd=")
   })
 
   it("sends selected categories and renders a successful prediction", () => {
