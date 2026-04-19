@@ -84,6 +84,31 @@ describe("Bitcoin Trend Recon frontend", () => {
     })
   })
 
+  it("clicks predict and receives a non-empty 200 response", () => {
+    visitApp()
+
+    cy.intercept("POST", "/predict", {
+      statusCode: 200,
+      body: {
+        target: 70123.4567,
+        current: 70000,
+        pred_horizon: 1,
+      },
+    }).as("predict")
+
+    cy.get('[data-cy="category-button"][data-category="technology"]').click()
+    cy.get('[data-cy="predict-button"]').click()
+
+    cy.wait("@predict").then(({ response }) => {
+      expect(response?.statusCode).to.equal(200)
+      expect(response?.body).to.not.be.empty
+    })
+
+    cy.get('[data-cy="prediction-result"]')
+      .invoke("text")
+      .should("not.be.empty")
+  })
+
   it("shows the backend error message when prediction fails", () => {
     visitApp()
 
