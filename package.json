@@ -10,7 +10,7 @@
     "cy:open:webkit": "CYPRESS_BROWSER=webkit node scripts/run-cypress.js open"
   },
   "devDependencies": {
-    "cypress": "^14.0.0",
+    "cypress": "^14.5.4",
     "playwright-webkit": "^1.53.1"
   }
 }

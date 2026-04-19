@@ -4,7 +4,7 @@ const path = require("node:path")
 const { defineConfig } = require("cypress")
 
 const host = "127.0.0.1"
-const port = 4173
+const port = 8085
 const frontendRoot = path.join(__dirname, "web-frontend", "html")
 
 let server
