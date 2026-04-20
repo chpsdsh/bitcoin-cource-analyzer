@@ -158,7 +158,7 @@ func TestPredictionServiceDoPrediction(t *testing.T) {
 
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				assert.ErrorContains(t, err, tt.expectedError.Error())
+				require.ErrorContains(t, err, tt.expectedError.Error())
 				assert.Equal(t, domain.Prediction{}, result)
 				return
 			}
@@ -179,24 +179,24 @@ func TestPredictionMathHelpers(t *testing.T) {
 		{
 			name: "direction to number maps all directions",
 			run: func(t *testing.T) {
-				assert.Equal(t, 1.0, directionToNumber(upDirection))
-				assert.Equal(t, -1.0, directionToNumber(downDirection))
-				assert.Equal(t, 0.0, directionToNumber(neutralDirection))
-				assert.Equal(t, 0.0, directionToNumber("unknown"))
+				assert.InDelta(t, 1.0, directionToNumber(upDirection), 1e-12)
+				assert.InDelta(t, -1.0, directionToNumber(downDirection), 1e-12)
+				assert.InDelta(t, 0.0, directionToNumber(neutralDirection), 1e-12)
+				assert.InDelta(t, 0.0, directionToNumber("unknown"), 1e-12)
 			},
 		},
 		{
 			name: "clamp01 limits values to range",
 			run: func(t *testing.T) {
-				assert.Equal(t, 0.0, clamp01(-1))
-				assert.Equal(t, 0.4, clamp01(0.4))
-				assert.Equal(t, 1.0, clamp01(2))
+				assert.InDelta(t, 0.0, clamp01(-1), 1e-12)
+				assert.InDelta(t, 0.4, clamp01(0.4), 1e-12)
+				assert.InDelta(t, 1.0, clamp01(2), 1e-12)
 			},
 		},
 		{
 			name: "calc r pred returns zero for empty list",
 			run: func(t *testing.T) {
-				assert.Equal(t, 0.0, calcRPred(nil))
+				assert.InDelta(t, 0.0, calcRPred(nil), 1e-12)
 			},
 		},
 		{

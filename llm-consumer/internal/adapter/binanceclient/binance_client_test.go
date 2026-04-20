@@ -49,7 +49,7 @@ func TestBinanceClientRequestBTCPrice(t *testing.T) {
 				assert.Equal(t, btcURL, r.Header.Get("X-Original-URL"))
 				w.WriteHeader(tt.responseCode)
 				_, err := io.WriteString(w, tt.responseBody)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			defer server.Close()
 

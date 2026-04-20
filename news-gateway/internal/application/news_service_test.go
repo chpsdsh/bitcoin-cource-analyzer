@@ -78,7 +78,7 @@ func TestNewsServiceRequestNews(t *testing.T) {
 
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				assert.ErrorIs(t, err, tt.expectedError)
+				require.ErrorIs(t, err, tt.expectedError)
 				assert.Nil(t, result)
 				return
 			}

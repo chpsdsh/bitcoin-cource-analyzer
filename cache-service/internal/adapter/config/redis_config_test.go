@@ -102,7 +102,7 @@ func TestNewRedisConfig(t *testing.T) {
 
 			if tt.expectedError != nil {
 				require.Error(t, err)
-				assert.ErrorIs(t, err, tt.expectedError)
+				require.ErrorIs(t, err, tt.expectedError)
 				assert.Equal(t, RedisConfig{}, cfg)
 				return
 			}

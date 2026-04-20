@@ -61,7 +61,7 @@ func TestNewsRequesterDoNewsRequest(t *testing.T) {
 				assert.Equal(t, expectedURL, r.Header.Get("X-Original-URL"))
 				w.WriteHeader(tt.responseCode)
 				_, err := io.WriteString(w, tt.responseBody)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			defer server.Close()
 
@@ -128,7 +128,7 @@ func TestNewsRequesterDoDataRequest(t *testing.T) {
 				assert.Equal(t, tt.url, r.Header.Get("X-Original-URL"))
 				w.WriteHeader(tt.responseCode)
 				_, err := io.WriteString(w, tt.responseBody)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			defer server.Close()
 
@@ -214,7 +214,7 @@ func TestNewsRequesterDoNewsRequestUsesCategoryURL(t *testing.T) {
 		assert.True(t, strings.Contains(originalURL, "maxrecords=50") || strings.Contains(originalURL, "maxrecords=100"))
 		assert.Contains(t, originalURL, "format=json")
 		_, err := io.WriteString(w, `{"articles":[]}`)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
