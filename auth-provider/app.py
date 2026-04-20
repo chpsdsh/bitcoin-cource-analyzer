@@ -144,10 +144,11 @@ def current_user(request: Request) -> dict[str, Any] | None:
 
 
 def hidden_inputs(query: dict[str, Any]) -> str:
-    return "\n".join(
-        f'<input type="hidden" name="{key}" value="{str(value).replace("\"", "&quot;")}">'
-        for key, value in query.items()
-    )
+    parts = []
+    for key, value in query.items():
+        safe_value = str(value).replace('"', "&quot;")
+        parts.append(f'<input type="hidden" name="{key}" value="{safe_value}">')
+    return "\n".join(parts)
 
 
 def render_auth_page(query: dict[str, Any], error_message: str = "") -> HTMLResponse:
