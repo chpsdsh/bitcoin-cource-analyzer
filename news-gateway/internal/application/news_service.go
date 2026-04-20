@@ -1,3 +1,5 @@
+//go:generate mockgen -source news_service.go -destination=mocks/news_service.go -package=mocks
+
 package application
 
 import (

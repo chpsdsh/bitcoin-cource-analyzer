@@ -1,3 +1,5 @@
+//go:generate mockgen -source prediction_service.go -destination=mocks/prediction_service.go -package=mocks
+
 package application
 
 import (
