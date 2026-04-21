@@ -138,10 +138,8 @@ def full_pipeline(request: SummarizeRequest) -> dict:
         raise HTTPException(status_code=500, detail=f"pipeline failed: {exc}") from exc
     
     
-@app.post("/predict")
-def predict(background_tasks: BackgroundTasks, request: Request | None = None) -> dict[str, str]:
+def predict(background_tasks: BackgroundTasks, trace_id: str = "") -> dict[str, str]:
     global _prediction_job_running
-    trace_id = request.headers.get(TRACE_ID_HEADER, "") if request is not None else ""
 
     with _prediction_job_lock:
         if _prediction_job_running:
@@ -159,3 +157,8 @@ def predict(background_tasks: BackgroundTasks, request: Request | None = None) -
 
     background_tasks.add_task(run_guarded)
     return {"status": "accepted"}
+
+
+@app.post("/predict")
+def predict_endpoint(request: Request, background_tasks: BackgroundTasks) -> dict[str, str]:
+    return predict(background_tasks, request.headers.get(TRACE_ID_HEADER, ""))
