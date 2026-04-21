@@ -215,7 +215,7 @@ services:
      - oauth2-proxy
    restart: unless-stopped
    ports:
-     - "8085:80"
+     - "8085:8080"
 
 volumes:
   auth-provider-data:
