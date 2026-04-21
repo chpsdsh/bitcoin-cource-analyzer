@@ -1,0 +1,17 @@
+services:
+  valkey:
+    command: ["valkey-server", "--requirepass", "password"]
+
+  valkey-seed:
+    environment:
+      VALKEY_PASSWORD: "password"
+
+  llm-consumer:
+    environment:
+      BINANCE_BTC_PRICE_URL: "http://mock-binance:8080/api/v3/ticker/price?symbol=BTCUSDT"
+
+  mock-binance:
+    build:
+      context: ./perf/mock-binance
+    container_name: mock-binance
+    restart: unless-stopped

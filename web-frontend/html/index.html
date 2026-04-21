@@ -468,8 +468,11 @@
       const darkTheme = "dark"
       const lightTheme = "light"
       const authProviderOrigin = `${window.location.protocol}//${window.location.hostname}:8086`
+      const appOrigin = window.location.origin
+      const authStartUrl = `${appOrigin}/oauth2/start?rd=${encodeURIComponent(`${appOrigin}/`)}`
+      const providerLogoutUrl = `${authProviderOrigin}/logout?rd=${encodeURIComponent(authStartUrl)}`
 
-      logoutLink.href = `/oauth2/sign_out?rd=${encodeURIComponent(`${authProviderOrigin}/logout?rd=${encodeURIComponent(`${window.location.origin}/`)}`)}`
+      logoutLink.href = `/oauth2/sign_out?rd=${encodeURIComponent(providerLogoutUrl)}`
 
       const applyTheme = (theme) => {
         document.body.setAttribute("data-theme", theme)
