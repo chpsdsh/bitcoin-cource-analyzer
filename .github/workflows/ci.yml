@@ -19,6 +19,8 @@ on:
       - "llm/**"
       - "news-gateway/**"
       - "news-parser/**"
+      - "perf/**"
+      - "scripts/**"
       - "sonar-project.properties"
       - "web-frontend/**"
       - "docker-compose.yml"
@@ -199,7 +201,7 @@ jobs:
         run: docker compose -f docker-compose.yml -f docker-compose.perf.yml config -q
 
   performance-ci:
-    name: Performance CI (${{ matrix.scenario.name }})
+    name: JMeter Performance CI (${{ matrix.scenario.name }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
