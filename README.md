@@ -108,6 +108,29 @@ GitHub Actions contains one pipeline:
 On `pull_request` and push to `main`, the pipeline:
 
 - runs `golangci-lint`, `go test ./...`, and `go build` for each Go service
-- installs Python dependencies for `llm` and checks syntax with `python -m compileall`
+- runs Python tests for `llm` and `auth-provider`, then checks syntax with `python -m compileall`
 - validates the frontend Dockerfile build
 - validates `docker-compose.yml`
+- runs SonarQube analysis for the monorepo and imports Go and Python coverage reports
+
+## SonarQube
+
+The repository includes a dedicated `SonarQube Scan` job in GitHub Actions.
+
+Before it can work, configure these repository settings:
+
+- Repository secret `SONAR_HOST_URL` with your SonarQube server URL, for example `https://sonarqube.example.com`
+- Repository secret `SONAR_TOKEN` with a token that can run analysis for this project
+- Repository variable `SONAR_PROJECT_KEY` with the SonarQube project key
+- Optional repository variable `SONAR_PROJECT_NAME` if you want a display name different from the repository name
+
+The scan uses [`sonar-project.properties`](/Users/andrewf1amex/Programming/bitcoin-cource-analyzer/sonar-project.properties:1) and currently imports coverage for:
+
+- `cache-service`
+- `llm-consumer`
+- `news-gateway`
+- `news-parser`
+- `llm`
+- `auth-provider`
+
+The frontend is still analyzed without coverage import for now.

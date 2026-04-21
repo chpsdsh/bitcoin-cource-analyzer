@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - ".github/workflows/ci.yml"
+      - "auth-provider/**"
       - "cache-service/**"
       - "cypress/**"
       - "cypress.config.js"
@@ -16,6 +17,7 @@ on:
       - "llm/**"
       - "news-gateway/**"
       - "news-parser/**"
+      - "sonar-project.properties"
       - "web-frontend/**"
       - "docker-compose.yml"
 
@@ -93,6 +95,36 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Run tests
+        run: pytest
+
+      - name: Check imports and syntax
+        run: python -m compileall .
+
+  auth-provider-ci:
+    name: Auth Provider CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-provider
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: auth-provider/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest
+
       - name: Check imports and syntax
         run: python -m compileall .
 
@@ -160,3 +192,90 @@ jobs:
 
       - name: Validate docker-compose
         run: docker compose -f docker-compose.yml config -q
+
+  sonar:
+    name: SonarQube Scan
+    runs-on: [self-hosted, macOS, ARM64]
+    environment: actions
+    needs:
+      - go-ci
+      - llm-ci
+      - auth-provider-ci
+      - frontend-ci
+      - frontend-e2e
+      - compose-validate
+    env:
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+      SONAR_PROJECT_NAME: ${{ vars.SONAR_PROJECT_NAME }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate SonarQube configuration
+        run: |
+          test -n "${SONAR_HOST_URL}" || { echo "Missing SONAR_HOST_URL secret"; exit 1; }
+          test -n "${SONAR_TOKEN}" || { echo "Missing SONAR_TOKEN secret"; exit 1; }
+          test -n "${SONAR_PROJECT_KEY}" || { echo "Missing SONAR_PROJECT_KEY repository variable"; exit 1; }
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.1"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: |
+            llm/requirements.txt
+            auth-provider/requirements.txt
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r llm/requirements.txt
+          pip install -r auth-provider/requirements.txt
+
+      - name: Prepare coverage directory
+        run: mkdir -p coverage
+
+      - name: Generate llm coverage report
+        run: pytest --cov=. --cov-report=xml:../coverage/llm-python.xml --cov-report=term-missing
+        working-directory: llm
+
+      - name: Generate auth-provider coverage report
+        run: pytest --cov=. --cov-report=xml:../coverage/auth-provider-python.xml --cov-report=term-missing
+        working-directory: auth-provider
+
+      - name: Generate Go coverage reports
+        run: |
+          go test ./... -coverprofile="$(pwd)/../coverage/cache-service.out"
+        working-directory: cache-service
+
+      - name: Generate llm-consumer coverage report
+        run: go test ./... -coverprofile="$(pwd)/../coverage/llm-consumer.out"
+        working-directory: llm-consumer
+
+      - name: Generate news-gateway coverage report
+        run: go test ./... -coverprofile="$(pwd)/../coverage/news-gateway.out"
+        working-directory: news-gateway
+
+      - name: Generate news-parser coverage report
+        run: go test ./... -coverprofile="$(pwd)/../coverage/news-parser.out"
+        working-directory: news-parser
+
+      - name: Run SonarQube scan
+        uses: SonarSource/sonarqube-scan-action@v7
+        env:
+          SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+            -Dsonar.projectName=${{ env.SONAR_PROJECT_NAME || github.event.repository.name }}
