@@ -145,7 +145,7 @@ def current_user(request: Request) -> dict[str, Any] | None:
 
 def hidden_inputs(query: dict[str, Any]) -> str:
     return "\n".join(
-        f'<input type="hidden" name="{key}" value="{str(value).replace("\"", "&quot;")}">'
+        f'<input type="hidden" name="{key}" value="{str(value).replace(chr(34), "&quot;")}">'
         for key, value in query.items()
     )
 

@@ -5,7 +5,8 @@ from schemas import Features, ScoreRequest, SummarizeRequest
 
 
 def test_health_reports_current_model_state(monkeypatch):
-    monkeypatch.setattr(llm_app.llm_service, "is_loaded", True)
+    monkeypatch.setattr(llm_app.llm_service, "model", object())
+    monkeypatch.setattr(llm_app.llm_service, "tokenizer", object())
 
     response = llm_app.health()
 
