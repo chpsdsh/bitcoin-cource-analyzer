@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 
+import httpx
 import jwt
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -47,10 +48,18 @@ client_secret = os.getenv("AUTH_PROVIDER_CLIENT_SECRET", "btr-local-secret")
 session_cookie_name = "btr_idp_session"
 session_cookie_secure = os.getenv("AUTH_PROVIDER_COOKIE_SECURE", "false").lower() == "true"
 token_lifetime_seconds = int(os.getenv("AUTH_PROVIDER_TOKEN_LIFETIME_SECONDS", "3600"))
+captcha_enabled = os.getenv("AUTH_PROVIDER_CAPTCHA_ENABLED", "false").lower() == "true"
+captcha_provider = os.getenv("AUTH_PROVIDER_CAPTCHA_PROVIDER", "turnstile").lower()
+captcha_site_key = os.getenv("AUTH_PROVIDER_CAPTCHA_SITE_KEY", "")
+captcha_secret_key = os.getenv("AUTH_PROVIDER_CAPTCHA_SECRET_KEY", "")
+captcha_threshold = int(os.getenv("AUTH_PROVIDER_CAPTCHA_THRESHOLD", "5"))
+captcha_window_seconds = int(os.getenv("AUTH_PROVIDER_CAPTCHA_WINDOW_SECONDS", "900"))
+captcha_verify_timeout_seconds = float(os.getenv("AUTH_PROVIDER_CAPTCHA_VERIFY_TIMEOUT_SECONDS", "5"))
 
 sessions: dict[str, str] = {}
 authorization_codes: dict[str, dict[str, Any]] = {}
 access_tokens: dict[str, dict[str, Any]] = {}
+failed_login_attempts: dict[str, dict[str, Any]] = {}
 
 
 def ensure_users_file() -> None:
@@ -162,6 +171,87 @@ def current_user(request: Request) -> dict[str, Any] | None:
     return get_user(email)
 
 
+def client_ip(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        return forwarded_for.split(",", 1)[0].strip()
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def cleanup_failed_login_attempts() -> None:
+    now = time.time()
+    expired_keys = [
+        key
+        for key, state in failed_login_attempts.items()
+        if now - state.get("updated_at", 0) > captcha_window_seconds
+    ]
+    for key in expired_keys:
+        failed_login_attempts.pop(key, None)
+
+
+def login_attempt_key(request: Request, email: str) -> str:
+    normalized_email = email.strip().lower() if email else "__unknown__"
+    return f"{client_ip(request)}:{normalized_email}"
+
+
+def captcha_configured() -> bool:
+    return captcha_enabled and captcha_provider == "turnstile" and bool(captcha_site_key and captcha_secret_key)
+
+
+def captcha_required_for(key: str) -> bool:
+    cleanup_failed_login_attempts()
+    return failed_login_attempts.get(key, {}).get("captcha_required", False)
+
+
+def register_failed_login(key: str) -> dict[str, Any]:
+    cleanup_failed_login_attempts()
+    state = failed_login_attempts.get(key, {"count": 0, "captcha_required": False})
+    state["count"] += 1
+    state["updated_at"] = time.time()
+    if state["count"] >= captcha_threshold:
+        state["captcha_required"] = True
+    failed_login_attempts[key] = state
+    return state
+
+
+def reset_failed_logins(key: str) -> None:
+    failed_login_attempts.pop(key, None)
+
+
+def verify_captcha(token: str, remote_ip: str | None = None) -> tuple[bool, str]:
+    if not captcha_enabled:
+        return True, ""
+
+    if not captcha_configured():
+        return False, "Captcha is temporarily unavailable"
+
+    if not token:
+        return False, "Please complete the captcha challenge"
+
+    try:
+        response = httpx.post(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data={
+                "secret": captcha_secret_key,
+                "response": token,
+                "remoteip": remote_ip or "",
+            },
+            timeout=captcha_verify_timeout_seconds,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except httpx.TimeoutException:
+        return False, "Captcha verification timed out. Please try again."
+    except httpx.HTTPError:
+        return False, "Captcha verification failed. Please try again."
+
+    if payload.get("success"):
+        return True, ""
+    return False, "Captcha verification failed. Please try again."
+
+
 def hidden_inputs(query: dict[str, Any]) -> str:
     parts = []
     for key, value in query.items():
@@ -170,9 +260,26 @@ def hidden_inputs(query: dict[str, Any]) -> str:
     return "\n".join(parts)
 
 
-def render_auth_page(query: dict[str, Any], error_message: str = "") -> HTMLResponse:
+def render_auth_page(query: dict[str, Any], error_message: str = "", captcha_required: bool = False) -> HTMLResponse:
     error_block = f'<div class="error">{error_message}</div>' if error_message else ""
     hidden_fields = hidden_inputs(query)
+    show_captcha = captcha_required and captcha_enabled
+    captcha_script = ""
+    captcha_markup = ""
+    if show_captcha and captcha_provider == "turnstile" and captcha_site_key:
+        captcha_script = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>'
+        captcha_markup = f"""
+              <div class="captcha-block">
+                <div class="captcha-label">Security check required after repeated failed sign-in attempts.</div>
+                <div class="cf-turnstile" data-sitekey="{captcha_site_key}"></div>
+              </div>
+        """
+    elif show_captcha:
+        captcha_markup = """
+              <div class="captcha-block">
+                <div class="captcha-label">Security check required. Captcha is temporarily unavailable.</div>
+              </div>
+        """
     html = f"""
     <!doctype html>
     <html lang="en">
@@ -180,6 +287,7 @@ def render_auth_page(query: dict[str, Any], error_message: str = "") -> HTMLResp
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>BTR Local Auth</title>
+        {captcha_script}
         <style>
           :root {{
             --bg: #0a1118;
@@ -287,6 +395,16 @@ def render_auth_page(query: dict[str, Any], error_message: str = "") -> HTMLResp
             background: var(--border);
             margin: 4px 0;
           }}
+          .captcha-block {{
+            display: grid;
+            gap: 10px;
+            padding: 12px 0 4px;
+          }}
+          .captcha-label {{
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.5;
+          }}
           @media (max-width: 860px) {{
             .shell {{
               grid-template-columns: 1fr;
@@ -311,6 +429,7 @@ def render_auth_page(query: dict[str, Any], error_message: str = "") -> HTMLResp
                 {hidden_fields}
                 <label>Email<input type="email" name="email" required autocomplete="email"></label>
                 <label>Password<input type="password" name="password" required autocomplete="current-password"></label>
+                {captcha_markup}
                 <button type="submit">Sign in</button>
               </form>
               <div class="divider"></div>
@@ -485,6 +604,7 @@ def register(
 
 @app.post("/login", response_model=None)
 def login(
+    request: Request,
     email: str = Form(...),
     password: str = Form(...),
     response_type: str = Form("code"),
@@ -495,6 +615,7 @@ def login(
     nonce: str = Form(""),
     code_challenge: str = Form(""),
     code_challenge_method: str = Form("plain"),
+    captcha_token: str = Form("", alias="cf-turnstile-response"),
 ) -> HTMLResponse | RedirectResponse:
     query = {
         "response_type": response_type,
@@ -507,12 +628,22 @@ def login(
         "code_challenge_method": code_challenge_method,
     }
 
+    attempt_key = login_attempt_key(request, email)
+    challenge_required = captcha_required_for(attempt_key)
+    if challenge_required:
+        captcha_ok, captcha_error = verify_captcha(captcha_token, client_ip(request))
+        if not captcha_ok:
+            return render_auth_page(query, captcha_error, captcha_required=True)
+        reset_failed_logins(attempt_key)
+
     user = verify_user(email, password)
     if not user:
-        return render_auth_page(query, "Invalid email or password")
+        state = register_failed_login(attempt_key)
+        return render_auth_page(query, "Invalid email or password", captcha_required=state["captcha_required"])
 
     session_id = secrets.token_urlsafe(24)
     sessions[session_id] = user["email"]
+    reset_failed_logins(attempt_key)
     response = redirect_to_authorize(query)
     response.set_cookie(
         session_cookie_name,

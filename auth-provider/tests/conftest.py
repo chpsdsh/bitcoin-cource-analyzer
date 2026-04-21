@@ -23,16 +23,25 @@ def isolated_auth_state(auth_module, tmp_path):
     auth_module.sessions.clear()
     auth_module.authorization_codes.clear()
     auth_module.access_tokens.clear()
+    auth_module.failed_login_attempts.clear()
 
     auth_module.data_dir = tmp_path
     auth_module.users_path = tmp_path / "users.json"
     auth_module.signing_key_path = tmp_path / "signing-key.pem"
+    auth_module.captcha_enabled = False
+    auth_module.captcha_provider = "turnstile"
+    auth_module.captcha_site_key = ""
+    auth_module.captcha_secret_key = ""
+    auth_module.captcha_threshold = 5
+    auth_module.captcha_window_seconds = 900
+    auth_module.captcha_verify_timeout_seconds = 5.0
 
     yield
 
     auth_module.sessions.clear()
     auth_module.authorization_codes.clear()
     auth_module.access_tokens.clear()
+    auth_module.failed_login_attempts.clear()
 
 
 @pytest.fixture
