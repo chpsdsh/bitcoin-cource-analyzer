@@ -17,8 +17,24 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 app = FastAPI(title="BTR Local OIDC Provider")
 
-data_dir = Path(os.getenv("AUTH_PROVIDER_DATA_DIR", "/data"))
-data_dir.mkdir(parents=True, exist_ok=True)
+def resolve_data_dir() -> Path:
+    configured_dir = os.getenv("AUTH_PROVIDER_DATA_DIR")
+    if configured_dir:
+        path = Path(configured_dir)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    preferred_path = Path("/data")
+    try:
+        preferred_path.mkdir(parents=True, exist_ok=True)
+        return preferred_path
+    except PermissionError:
+        fallback_path = Path(__file__).resolve().parent / ".auth-provider-data"
+        fallback_path.mkdir(parents=True, exist_ok=True)
+        return fallback_path
+
+
+data_dir = resolve_data_dir()
 users_path = data_dir / "users.json"
 signing_key_path = data_dir / "signing-key.pem"
 
