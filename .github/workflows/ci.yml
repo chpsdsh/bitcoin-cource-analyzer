@@ -9,13 +9,17 @@ on:
       - ".github/workflows/ci.yml"
       - "cache-service/**"
       - "cypress/**"
+      - "docker-compose.perf.yml"
       - "cypress.config.js"
+      - "jmeter/**"
       - "package.json"
       - "package-lock.json"
       - "llm-consumer/**"
       - "llm/**"
       - "news-gateway/**"
       - "news-parser/**"
+      - "perf/**"
+      - "scripts/**"
       - "web-frontend/**"
       - "docker-compose.yml"
 
@@ -160,3 +164,160 @@ jobs:
 
       - name: Validate docker-compose
         run: docker compose -f docker-compose.yml config -q
+
+      - name: Validate docker-compose perf override
+        run: docker compose -f docker-compose.yml -f docker-compose.perf.yml config -q
+
+  performance-ci:
+    name: Performance CI (${{ matrix.scenario.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - name: News Smoke
+            slug: news-smoke
+          - name: News Hot Category
+            slug: news-hot-category
+          - name: News Mixed Profile
+            slug: news-mixed-profile
+          - name: News Cache Cold Hot
+            slug: news-cache-cold-hot
+          - name: LLM Consumer Predict
+            slug: llm-consumer-predict
+    env:
+      COMPOSE_PROJECT_NAME: btca-${{ github.run_id }}-${{ matrix.scenario.slug }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare scripts
+        run: chmod +x scripts/run-jmeter.sh scripts/assert-jmeter-results.sh
+
+      - name: Start performance stack
+        run: docker compose -f docker-compose.yml -f docker-compose.perf.yml up -d --build valkey mock-binance news-gateway llm-consumer
+
+      - name: Seed Valkey test data
+        run: docker compose -f docker-compose.yml -f docker-compose.perf.yml run --rm valkey-seed
+
+      - name: Wait for internal services
+        run: |
+          for i in {1..30}; do
+            if docker run --rm --network "${COMPOSE_PROJECT_NAME}_default" curlimages/curl:8.8.0 -fsS "http://news-gateway:8080/news/crypto" >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "news-gateway did not become ready"
+              docker compose -f docker-compose.yml -f docker-compose.perf.yml ps
+              docker compose -f docker-compose.yml -f docker-compose.perf.yml logs news-gateway llm-consumer mock-binance valkey
+              exit 1
+            fi
+            sleep 2
+          done
+
+          for i in {1..30}; do
+            if docker run --rm --network "${COMPOSE_PROJECT_NAME}_default" curlimages/curl:8.8.0 -fsS -X POST "http://llm-consumer:8080/predict" -H "Content-Type: application/json" -d '{"categoriesList":["crypto"]}' >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "llm-consumer did not become ready"
+              docker compose -f docker-compose.yml -f docker-compose.perf.yml ps
+              docker compose -f docker-compose.yml -f docker-compose.perf.yml logs news-gateway llm-consumer mock-binance valkey
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Run JMeter scenario
+        run: |
+          mkdir -p "artifacts/${{ matrix.scenario.slug }}"
+          case "${{ matrix.scenario.slug }}" in
+            news-smoke)
+              ./scripts/run-jmeter.sh \
+                jmeter/news-gateway-read-csv.jmx \
+                artifacts/news-smoke \
+                -Jhost=news-gateway \
+                -Jport=8080 \
+                -Jthreads=5 \
+                -Jramp_up=1 \
+                -Jloops=4 \
+                -Jcategories_file=jmeter/data/news-categories-smoke.csv \
+                -Jmax_response_ms=3000
+              ./scripts/assert-jmeter-results.sh artifacts/news-smoke/results.jtl 20 0 2000 1000
+              ;;
+            news-hot-category)
+              ./scripts/run-jmeter.sh \
+                jmeter/news-gateway-hot-category.jmx \
+                artifacts/news-hot-category \
+                -Jhost=news-gateway \
+                -Jport=8080 \
+                -Jcategory=crypto \
+                -Jthreads=30 \
+                -Jramp_up=1 \
+                -Jloops=5 \
+                -Jmax_response_ms=4000
+              ./scripts/assert-jmeter-results.sh artifacts/news-hot-category/results.jtl 150 0 2500 1200
+              ;;
+            news-mixed-profile)
+              ./scripts/run-jmeter.sh \
+                jmeter/news-gateway-read-csv.jmx \
+                artifacts/news-mixed-profile \
+                -Jhost=news-gateway \
+                -Jport=8080 \
+                -Jthreads=15 \
+                -Jramp_up=2 \
+                -Jloops=4 \
+                -Jcategories_file=jmeter/data/news-categories-mixed.csv \
+                -Jmax_response_ms=3500
+              ./scripts/assert-jmeter-results.sh artifacts/news-mixed-profile/results.jtl 60 0 2200 1100
+              ;;
+            news-cache-cold-hot)
+              mkdir -p artifacts/news-cache-cold-hot/cold artifacts/news-cache-cold-hot/hot
+              ./scripts/run-jmeter.sh \
+                jmeter/news-gateway-read-csv.jmx \
+                artifacts/news-cache-cold-hot/cold \
+                -Jhost=news-gateway \
+                -Jport=8080 \
+                -Jthreads=5 \
+                -Jramp_up=1 \
+                -Jloops=4 \
+                -Jcategories_file=jmeter/data/news-categories-smoke.csv \
+                -Jmax_response_ms=3500
+              ./scripts/assert-jmeter-results.sh artifacts/news-cache-cold-hot/cold/results.jtl 20 0 2500 1300
+              ./scripts/run-jmeter.sh \
+                jmeter/news-gateway-read-csv.jmx \
+                artifacts/news-cache-cold-hot/hot \
+                -Jhost=news-gateway \
+                -Jport=8080 \
+                -Jthreads=10 \
+                -Jramp_up=1 \
+                -Jloops=4 \
+                -Jcategories_file=jmeter/data/news-categories-smoke.csv \
+                -Jmax_response_ms=2000
+              ./scripts/assert-jmeter-results.sh artifacts/news-cache-cold-hot/hot/results.jtl 40 0 1200 600
+              ;;
+            llm-consumer-predict)
+              ./scripts/run-jmeter.sh \
+                jmeter/llm-consumer-predict.jmx \
+                artifacts/llm-consumer-predict \
+                -Jhost=llm-consumer \
+                -Jport=8080 \
+                -Jthreads=20 \
+                -Jramp_up=2 \
+                -Jloops=2 \
+                -Jmax_response_ms=8000
+              ./scripts/assert-jmeter-results.sh artifacts/llm-consumer-predict/results.jtl 40 0 5000 2500
+              ;;
+          esac
+
+      - name: Upload JMeter artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-${{ matrix.scenario.slug }}
+          path: artifacts/${{ matrix.scenario.slug }}
+
+      - name: Stop performance stack
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.perf.yml down -v

@@ -111,3 +111,31 @@ On `pull_request` and push to `main`, the pipeline:
 - installs Python dependencies for `llm` and checks syntax with `python -m compileall`
 - validates the frontend Dockerfile build
 - validates `docker-compose.yml`
+- runs JMeter-based performance checks for `news-gateway` and `llm-consumer`
+
+## JMeter Performance Tests
+
+The repository now includes JMeter plans and CI jobs for backend load checks:
+
+- `news-smoke`: category read smoke test for `GET /news/:category`
+- `news-hot-category`: burst load against a hot category such as `crypto`
+- `news-mixed-profile`: weighted category mix closer to real read traffic
+- `news-cache-cold-hot`: cold-cache pass followed by a stricter hot-cache pass
+- `llm-consumer-predict`: concurrent `POST /predict` load against `llm-consumer`
+
+Helper files:
+
+- JMeter plans live in `jmeter/`
+- the CI-only Binance stub lives in `perf/mock-binance/`
+- `docker-compose.perf.yml` overrides `llm-consumer` to use the local mock price feed
+
+Run a plan locally with Dockerized JMeter:
+
+```bash
+chmod +x scripts/run-jmeter.sh scripts/assert-jmeter-results.sh
+COMPOSE_PROJECT_NAME=btca-local docker compose -f docker-compose.yml -f docker-compose.perf.yml up -d --build valkey mock-binance news-gateway llm-consumer
+COMPOSE_PROJECT_NAME=btca-local docker compose -f docker-compose.yml -f docker-compose.perf.yml run --rm valkey-seed
+COMPOSE_PROJECT_NAME=btca-local ./scripts/run-jmeter.sh jmeter/news-gateway-read-csv.jmx artifacts/news-smoke-local -Jhost=news-gateway -Jport=8080 -Jthreads=5 -Jramp_up=1 -Jloops=4 -Jcategories_file=jmeter/data/news-categories-smoke.csv
+./scripts/assert-jmeter-results.sh artifacts/news-smoke-local/results.jtl 20 0 2000 1000
+COMPOSE_PROJECT_NAME=btca-local docker compose -f docker-compose.yml -f docker-compose.perf.yml down -v
+```

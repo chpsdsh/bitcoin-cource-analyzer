@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"llm-consumer/internal/domain"
@@ -18,15 +19,19 @@ const (
 
 type BinanceClient struct {
 	httpClient *http.Client
+	priceURL   string
 }
 
 func NewBinanceClient() *BinanceClient {
 	client := &http.Client{Timeout: clientTimeout}
-	return &BinanceClient{httpClient: client}
+	return &BinanceClient{
+		httpClient: client,
+		priceURL:   priceURLFromEnv(),
+	}
 }
 
 func (c BinanceClient) RequestBTCPrice() (domain.PriceResponse, error) {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, btcURL, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, c.requestURL(), nil)
 	if err != nil {
 		return domain.PriceResponse{}, fmt.Errorf("could not create request: %w", err)
 	}
@@ -46,4 +51,19 @@ func (c BinanceClient) RequestBTCPrice() (domain.PriceResponse, error) {
 		return domain.PriceResponse{}, fmt.Errorf("could not unmarshal response body: %w", err)
 	}
 	return priceResponse, nil
+}
+
+func (c BinanceClient) requestURL() string {
+	if c.priceURL == "" {
+		return btcURL
+	}
+	return c.priceURL
+}
+
+func priceURLFromEnv() string {
+	priceURL := os.Getenv("BINANCE_BTC_PRICE_URL")
+	if priceURL == "" {
+		return btcURL
+	}
+	return priceURL
 }

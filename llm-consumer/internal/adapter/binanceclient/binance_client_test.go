@@ -77,10 +77,17 @@ func TestBinanceClientRequestBTCPrice(t *testing.T) {
 }
 
 func TestNewBinanceClient(t *testing.T) {
+	t.Setenv("BINANCE_BTC_PRICE_URL", "http://mock-binance.local/api/v3/ticker/price?symbol=BTCUSDT")
 	client := NewBinanceClient()
 	require.NotNil(t, client)
 	require.NotNil(t, client.httpClient)
 	assert.Equal(t, clientTimeout, client.httpClient.Timeout)
+	assert.Equal(t, "http://mock-binance.local/api/v3/ticker/price?symbol=BTCUSDT", client.priceURL)
+}
+
+func TestPriceURLFromEnvFallsBackToDefault(t *testing.T) {
+	t.Setenv("BINANCE_BTC_PRICE_URL", "")
+	assert.Equal(t, btcURL, priceURLFromEnv())
 }
 
 type rewriteTransport struct {
