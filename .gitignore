@@ -38,3 +38,5 @@ node_modules
 cypress/screenshots
 cypress/videos
 __pycache__/
+
+actions-runner/*

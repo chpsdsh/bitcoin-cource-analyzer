@@ -1,4 +1,5 @@
 import base64
+import errno
 import hashlib
 import json
 import os
@@ -17,8 +18,26 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 app = FastAPI(title="BTR Local OIDC Provider")
 
-data_dir = Path(os.getenv("AUTH_PROVIDER_DATA_DIR", "/data"))
-data_dir.mkdir(parents=True, exist_ok=True)
+def resolve_data_dir() -> Path:
+    configured_dir = os.getenv("AUTH_PROVIDER_DATA_DIR")
+    if configured_dir:
+        path = Path(configured_dir)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    preferred_path = Path("/data")
+    try:
+        preferred_path.mkdir(parents=True, exist_ok=True)
+        return preferred_path
+    except OSError as error:
+        if error.errno not in (errno.EACCES, errno.EPERM, errno.EROFS):
+            raise
+        fallback_path = Path(__file__).resolve().parent / ".auth-provider-data"
+        fallback_path.mkdir(parents=True, exist_ok=True)
+        return fallback_path
+
+
+data_dir = resolve_data_dir()
 users_path = data_dir / "users.json"
 signing_key_path = data_dir / "signing-key.pem"
 
@@ -144,10 +163,11 @@ def current_user(request: Request) -> dict[str, Any] | None:
 
 
 def hidden_inputs(query: dict[str, Any]) -> str:
-    return "\n".join(
-        f'<input type="hidden" name="{key}" value="{str(value).replace("\"", "&quot;")}">'
-        for key, value in query.items()
-    )
+    parts = []
+    for key, value in query.items():
+        safe_value = str(value).replace('"', "&quot;")
+        parts.append(f'<input type="hidden" name="{key}" value="{safe_value}">')
+    return "\n".join(parts)
 
 
 def render_auth_page(query: dict[str, Any], error_message: str = "") -> HTMLResponse:

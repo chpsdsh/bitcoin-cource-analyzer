@@ -8,7 +8,12 @@ ENV PYTHONUNBUFFERED=1
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+RUN addgroup --system app \
+    && adduser --system --ingroup app app
+
+COPY app.py config.py infra.py jobs.py llm.py prompts.py schemas.py utils.py ./
+
+USER app
 
 EXPOSE 8080
 
