@@ -1,4 +1,5 @@
 import base64
+import errno
 import hashlib
 import json
 import os
@@ -28,7 +29,9 @@ def resolve_data_dir() -> Path:
     try:
         preferred_path.mkdir(parents=True, exist_ok=True)
         return preferred_path
-    except PermissionError:
+    except OSError as error:
+        if error.errno not in (errno.EACCES, errno.EPERM, errno.EROFS):
+            raise
         fallback_path = Path(__file__).resolve().parent / ".auth-provider-data"
         fallback_path.mkdir(parents=True, exist_ok=True)
         return fallback_path
