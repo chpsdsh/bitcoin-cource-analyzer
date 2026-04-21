@@ -270,6 +270,11 @@ jobs:
         run: go test ./... -coverprofile="$(pwd)/../coverage/news-parser.out"
         working-directory: news-parser
 
+      - name: Normalize Go coverage paths
+        run: |
+          sed -i.bak 's#^data-cleaner/#cache-service/#' coverage/cache-service.out
+          rm coverage/*.bak
+
       - name: Run SonarQube scan
         uses: SonarSource/sonarqube-scan-action@v7
         env:

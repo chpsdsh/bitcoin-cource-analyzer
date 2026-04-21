@@ -11,9 +11,12 @@ import (
 	"data-cleaner/internal/adapter/kafkaconsumer"
 	"data-cleaner/internal/adapter/storage"
 	"data-cleaner/internal/application"
+	"data-cleaner/internal/observability"
 )
 
 func main() {
+	observability.InitLogger("cache-service")
+
 	kafkaCfg, err := config.NewKafkaConfig()
 	if err != nil {
 		slog.Error("Error loading kafka config", slog.String("error", err.Error()))

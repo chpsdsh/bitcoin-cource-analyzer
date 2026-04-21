@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	domain "news-parser/internal/domain"
 	reflect "reflect"
 
@@ -35,33 +36,33 @@ func (m *MockRequestHandler) EXPECT() *MockRequestHandlerMockRecorder {
 }
 
 // DoDataRequest mocks base method.
-func (m *MockRequestHandler) DoDataRequest(url string) ([]byte, error) {
+func (m *MockRequestHandler) DoDataRequest(ctx context.Context, url string) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DoDataRequest", url)
+	ret := m.ctrl.Call(m, "DoDataRequest", ctx, url)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DoDataRequest indicates an expected call of DoDataRequest.
-func (mr *MockRequestHandlerMockRecorder) DoDataRequest(url interface{}) *gomock.Call {
+func (mr *MockRequestHandlerMockRecorder) DoDataRequest(ctx, url interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoDataRequest", reflect.TypeOf((*MockRequestHandler)(nil).DoDataRequest), url)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoDataRequest", reflect.TypeOf((*MockRequestHandler)(nil).DoDataRequest), ctx, url)
 }
 
 // DoNewsRequest mocks base method.
-func (m *MockRequestHandler) DoNewsRequest(category domain.Category) (domain.Articles, error) {
+func (m *MockRequestHandler) DoNewsRequest(ctx context.Context, category domain.Category) (domain.Articles, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DoNewsRequest", category)
+	ret := m.ctrl.Call(m, "DoNewsRequest", ctx, category)
 	ret0, _ := ret[0].(domain.Articles)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DoNewsRequest indicates an expected call of DoNewsRequest.
-func (mr *MockRequestHandlerMockRecorder) DoNewsRequest(category interface{}) *gomock.Call {
+func (mr *MockRequestHandlerMockRecorder) DoNewsRequest(ctx, category interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoNewsRequest", reflect.TypeOf((*MockRequestHandler)(nil).DoNewsRequest), category)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoNewsRequest", reflect.TypeOf((*MockRequestHandler)(nil).DoNewsRequest), ctx, category)
 }
 
 // MockLLMNotifier is a mock of LLMNotifier interface.
@@ -88,15 +89,15 @@ func (m *MockLLMNotifier) EXPECT() *MockLLMNotifierMockRecorder {
 }
 
 // StartLLMPrediction mocks base method.
-func (m *MockLLMNotifier) StartLLMPrediction() error {
+func (m *MockLLMNotifier) StartLLMPrediction(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StartLLMPrediction")
+	ret := m.ctrl.Call(m, "StartLLMPrediction", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // StartLLMPrediction indicates an expected call of StartLLMPrediction.
-func (mr *MockLLMNotifierMockRecorder) StartLLMPrediction() *gomock.Call {
+func (mr *MockLLMNotifierMockRecorder) StartLLMPrediction(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartLLMPrediction", reflect.TypeOf((*MockLLMNotifier)(nil).StartLLMPrediction))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartLLMPrediction", reflect.TypeOf((*MockLLMNotifier)(nil).StartLLMPrediction), ctx)
 }

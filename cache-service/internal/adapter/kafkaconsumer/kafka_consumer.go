@@ -9,6 +9,7 @@ import (
 
 	"data-cleaner/internal/adapter/config"
 	"data-cleaner/internal/domain"
+	"data-cleaner/internal/observability"
 )
 
 type ArticlesHandler interface {
@@ -59,7 +60,11 @@ func (k *KafkaConsumer) StartReadingArticles(ctx context.Context) error {
 		if err = json.Unmarshal(msg.Value, &articleDto); err != nil {
 			return fmt.Errorf("error unmarshalling message: %w", err)
 		}
-		k.handler.HandleArticle(ctx, articleDto)
+		msgCtx := observability.ContextWithKafkaTraceID(ctx, msg.Headers)
+		if articleDto.TraceID == "" {
+			articleDto.TraceID = observability.TraceIDFromContext(msgCtx)
+		}
+		k.handler.HandleArticle(msgCtx, articleDto)
 	}
 }
 
@@ -74,7 +79,11 @@ func (k *KafkaConsumer) StartReadingNews(ctx context.Context) error {
 		if err = json.Unmarshal(msg.Value, &newsDto); err != nil {
 			return fmt.Errorf("error unmarshalling message: %w", err)
 		}
-		k.handler.HandleNews(ctx, newsDto)
+		msgCtx := observability.ContextWithKafkaTraceID(ctx, msg.Headers)
+		if newsDto.TraceID == "" {
+			newsDto.TraceID = observability.TraceIDFromContext(msgCtx)
+		}
+		k.handler.HandleNews(msgCtx, newsDto)
 	}
 }
 
@@ -89,7 +98,11 @@ func (k *KafkaConsumer) StartLLMResponse(ctx context.Context) error {
 		if err = json.Unmarshal(msg.Value, &llmDto); err != nil {
 			return fmt.Errorf("error unmarshalling message: %w", err)
 		}
-		k.handler.HandleLLMResponse(ctx, llmDto)
+		msgCtx := observability.ContextWithKafkaTraceID(ctx, msg.Headers)
+		if llmDto.TraceID == "" {
+			llmDto.TraceID = observability.TraceIDFromContext(msgCtx)
+		}
+		k.handler.HandleLLMResponse(msgCtx, llmDto)
 	}
 }
 

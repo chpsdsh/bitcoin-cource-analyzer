@@ -1,6 +1,7 @@
 package networkclient
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -74,7 +75,7 @@ func TestNewsRequesterDoNewsRequest(t *testing.T) {
 			}
 
 			requester := NewsRequester{Client: client}
-			result, err := requester.DoNewsRequest(tt.category)
+			result, err := requester.DoNewsRequest(context.Background(), tt.category)
 
 			if tt.expectedError != "" {
 				require.Error(t, err)
@@ -140,7 +141,7 @@ func TestNewsRequesterDoDataRequest(t *testing.T) {
 			}
 
 			requester := NewsRequester{Client: client}
-			result, err := requester.DoDataRequest(tt.url)
+			result, err := requester.DoDataRequest(context.Background(), tt.url)
 
 			if tt.expectedError != "" {
 				require.Error(t, err)
@@ -226,6 +227,6 @@ func TestNewsRequesterDoNewsRequestUsesCategoryURL(t *testing.T) {
 	}
 
 	requester := NewsRequester{Client: client}
-	_, err := requester.DoNewsRequest(domain.PoliticsCategory)
+	_, err := requester.DoNewsRequest(context.Background(), domain.PoliticsCategory)
 	require.NoError(t, err)
 }

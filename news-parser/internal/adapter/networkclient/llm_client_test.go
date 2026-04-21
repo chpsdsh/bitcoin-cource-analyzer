@@ -1,6 +1,7 @@
 package networkclient
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -62,7 +63,7 @@ func TestLLMClientStartLLMPrediction(t *testing.T) {
 				LLMAddress: tt.address,
 			}
 
-			err := llmClient.StartLLMPrediction()
+			err := llmClient.StartLLMPrediction(context.Background())
 
 			if tt.expectedError != "" {
 				require.Error(t, err)

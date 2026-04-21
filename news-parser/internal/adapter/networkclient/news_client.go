@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"news-parser/internal/domain"
+	"news-parser/internal/observability"
 )
 
 const (
@@ -23,11 +24,14 @@ type NewsRequester struct {
 	Client *http.Client
 }
 
-func (nr NewsRequester) DoNewsRequest(category domain.Category) (domain.Articles, error) {
+func (nr NewsRequester) DoNewsRequest(ctx context.Context, category domain.Category) (domain.Articles, error) {
 	URL := urlByCategory(category)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, URL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, URL, nil)
 	if err != nil {
 		return domain.Articles{}, fmt.Errorf("error creating request %w", err)
+	}
+	if traceID := observability.TraceIDFromContext(ctx); traceID != "" {
+		req.Header.Set(observability.TraceIDHeader, traceID)
 	}
 
 	resp, err := nr.Client.Do(req)
@@ -48,10 +52,13 @@ func (nr NewsRequester) DoNewsRequest(category domain.Category) (domain.Articles
 	return articles, nil
 }
 
-func (nr NewsRequester) DoDataRequest(url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+func (nr NewsRequester) DoDataRequest(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request %w", err)
+	}
+	if traceID := observability.TraceIDFromContext(ctx); traceID != "" {
+		req.Header.Set(observability.TraceIDHeader, traceID)
 	}
 
 	resp, err := nr.Client.Do(req)
