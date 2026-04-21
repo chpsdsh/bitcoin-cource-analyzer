@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN addgroup --system app \
     && adduser --system --ingroup app app
 
-COPY app.py config.py infra.py jobs.py llm.py prompts.py schemas.py utils.py ./
+COPY app.py config.py infra.py jobs.py llm.py observability.py prompts.py schemas.py utils.py ./
 
 USER app
 

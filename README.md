@@ -36,6 +36,7 @@ Default behavior:
 - The stack includes a built-in local OIDC provider with registration and login pages.
 - Open `http://localhost:8085`, create an account, and the app will continue after OAuth login.
 - User accounts are stored in a lightweight local JSON-backed volume, not in an external database.
+- Optional login captcha protection can be enabled in `.env`. When enabled, the login form requires a Turnstile captcha after 5 failed sign-in attempts for the same `IP + email` pair. A successful captcha check resets the counter and starts a fresh 5-attempt window.
 
 Optional external provider setup:
 
