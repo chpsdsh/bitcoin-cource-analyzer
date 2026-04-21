@@ -173,3 +173,30 @@ def test_issue_tokens_id_token_contains_expected_claims(auth_module):
     assert decoded["preferred_username"] == "user"
     assert decoded["iss"] == auth_module.public_issuer
     assert decoded["aud"] == auth_module.client_id
+
+
+def test_register_failed_login_enables_captcha_after_threshold(auth_module):
+    key = "127.0.0.1:user@example.com"
+
+    for _ in range(auth_module.captcha_threshold - 1):
+        state = auth_module.register_failed_login(key)
+
+    assert state["count"] == auth_module.captcha_threshold - 1
+    assert state["captcha_required"] is False
+
+    state = auth_module.register_failed_login(key)
+
+    assert state["count"] == auth_module.captcha_threshold
+    assert state["captcha_required"] is True
+    assert auth_module.captcha_required_for(key) is True
+
+
+def test_reset_failed_logins_clears_captcha_requirement(auth_module):
+    key = "127.0.0.1:user@example.com"
+    for _ in range(auth_module.captcha_threshold):
+        auth_module.register_failed_login(key)
+
+    auth_module.reset_failed_logins(key)
+
+    assert auth_module.captcha_required_for(key) is False
+    assert key not in auth_module.failed_login_attempts

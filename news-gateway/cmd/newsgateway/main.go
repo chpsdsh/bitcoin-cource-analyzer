@@ -14,6 +14,7 @@ import (
 	"news-gateway/internal/adapter/server"
 	"news-gateway/internal/adapter/storage"
 	"news-gateway/internal/application"
+	"news-gateway/internal/observability"
 )
 
 const (
@@ -22,6 +23,8 @@ const (
 )
 
 func main() {
+	observability.InitLogger("news-gateway")
+
 	redisConf, err := config.NewRedisConfig()
 	if err != nil {
 		slog.Error("Error loading redis config", slog.String("error", err.Error()))

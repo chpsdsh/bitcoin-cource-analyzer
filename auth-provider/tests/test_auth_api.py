@@ -151,6 +151,51 @@ def test_login_invalid_credentials_returns_error_page(client, auth_query, create
     assert "Invalid email or password" in response.text
 
 
+def test_login_requires_captcha_after_five_failed_attempts(client, auth_module, auth_query, created_user):
+    auth_module.captcha_enabled = True
+    auth_module.captcha_site_key = "site-key"
+    auth_module.captcha_secret_key = "secret-key"
+    form = {**auth_query, "email": created_user["email"], "password": "wrong-password"}
+
+    for _ in range(auth_module.captcha_threshold):
+        response = client.post("/login", data=form)
+
+    assert response.status_code == 200
+    assert "Security check required after repeated failed sign-in attempts." in response.text
+    assert "cf-turnstile" in response.text
+
+    missing_captcha_response = client.post("/login", data=form)
+
+    assert missing_captcha_response.status_code == 200
+    assert "Please complete the captcha challenge" in missing_captcha_response.text
+
+
+def test_login_resets_failed_attempts_after_successful_captcha(client, auth_module, auth_query, created_user, monkeypatch):
+    auth_module.captcha_enabled = True
+    auth_module.captcha_site_key = "site-key"
+    auth_module.captcha_secret_key = "secret-key"
+    form = {**auth_query, "email": created_user["email"], "password": "wrong-password"}
+
+    for _ in range(auth_module.captcha_threshold):
+        client.post("/login", data=form)
+
+    monkeypatch.setattr(auth_module, "verify_captcha", lambda token, remote_ip=None: (True, ""))
+    success_form = {
+        **auth_query,
+        "email": created_user["email"],
+        "password": created_user["password"],
+        "cf-turnstile-response": "valid-token",
+    }
+
+    response = client.post("/login", data=success_form, follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"].startswith("/authorize?")
+
+    attempt_key = f"testclient:{created_user['email']}"
+    assert attempt_key not in auth_module.failed_login_attempts
+
+
 def test_token_rejects_unsupported_grant_type(client, auth_module, issued_code, auth_query):
     response = client.post(
         "/token",

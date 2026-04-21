@@ -5,13 +5,14 @@ import (
 	"sync"
 
 	"news-parser/internal/domain"
+	"news-parser/internal/observability"
 )
 
 const NumKafkaSenders = 5
 
 type Sender interface {
-	SendArticle(dto domain.ArticleDto)
-	SendNews(dto domain.NewsDto)
+	SendArticle(ctx context.Context, dto domain.ArticleDto)
+	SendNews(ctx context.Context, dto domain.NewsDto)
 }
 
 type KafkaSender struct {
@@ -34,12 +35,14 @@ func (s KafkaSender) sendDataToKafka(ctx context.Context) {
 			if !ok {
 				return
 			}
-			s.producer.SendArticle(dto)
+			dtoCtx := observability.ContextWithTraceID(ctx, dto.TraceID)
+			s.producer.SendArticle(dtoCtx, dto)
 		case news, ok := <-s.news:
 			if !ok {
 				return
 			}
-			s.producer.SendNews(news)
+			newsCtx := observability.ContextWithTraceID(ctx, news.TraceID)
+			s.producer.SendNews(newsCtx, news)
 		case <-ctx.Done():
 			return
 		}

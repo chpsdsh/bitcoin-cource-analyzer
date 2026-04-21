@@ -8,6 +8,7 @@ import (
 
 	"news-parser/internal/application/mocks"
 	"news-parser/internal/domain"
+	"news-parser/internal/observability"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -15,6 +16,8 @@ import (
 )
 
 func TestApplicationParseNews(t *testing.T) {
+	const traceID = "test-trace-id"
+
 	tests := []struct {
 		name              string
 		setupHandler      func(*gomock.Controller) RequestHandler
@@ -28,7 +31,7 @@ func TestApplicationParseNews(t *testing.T) {
 				for _, category := range domain.AllCategories {
 					currentCategory := category
 					handler.EXPECT().
-						DoNewsRequest(currentCategory).
+						DoNewsRequest(gomock.Any(), currentCategory).
 						Return(domain.Articles{Articles: []domain.GdeltAPIDto{{
 							Title:       "title-" + domain.CategoryToString(currentCategory),
 							URL:         "https://example.com/" + domain.CategoryToString(currentCategory),
@@ -38,18 +41,18 @@ func TestApplicationParseNews(t *testing.T) {
 				return handler
 			},
 			expectedRequests: []domain.GdeltAPIDto{
-				{Category: "politics", Title: "title-politics", URL: "https://example.com/politics", SocialImage: "https://example.com/image-politics"},
-				{Category: "environment", Title: "title-environment", URL: "https://example.com/environment", SocialImage: "https://example.com/image-environment"},
-				{Category: "economy", Title: "title-economy", URL: "https://example.com/economy", SocialImage: "https://example.com/image-economy"},
-				{Category: "technology", Title: "title-technology", URL: "https://example.com/technology", SocialImage: "https://example.com/image-technology"},
-				{Category: "crypto", Title: "title-crypto", URL: "https://example.com/crypto", SocialImage: "https://example.com/image-crypto"},
+				{TraceID: traceID, Category: "politics", Title: "title-politics", URL: "https://example.com/politics", SocialImage: "https://example.com/image-politics"},
+				{TraceID: traceID, Category: "environment", Title: "title-environment", URL: "https://example.com/environment", SocialImage: "https://example.com/image-environment"},
+				{TraceID: traceID, Category: "economy", Title: "title-economy", URL: "https://example.com/economy", SocialImage: "https://example.com/image-economy"},
+				{TraceID: traceID, Category: "technology", Title: "title-technology", URL: "https://example.com/technology", SocialImage: "https://example.com/image-technology"},
+				{TraceID: traceID, Category: "crypto", Title: "title-crypto", URL: "https://example.com/crypto", SocialImage: "https://example.com/image-crypto"},
 			},
 			expectedNewsItems: []domain.NewsDto{
-				{Category: "politics", Title: "title-politics", URL: "https://example.com/politics", SocialImage: "https://example.com/image-politics"},
-				{Category: "environment", Title: "title-environment", URL: "https://example.com/environment", SocialImage: "https://example.com/image-environment"},
-				{Category: "economy", Title: "title-economy", URL: "https://example.com/economy", SocialImage: "https://example.com/image-economy"},
-				{Category: "technology", Title: "title-technology", URL: "https://example.com/technology", SocialImage: "https://example.com/image-technology"},
-				{Category: "crypto", Title: "title-crypto", URL: "https://example.com/crypto", SocialImage: "https://example.com/image-crypto"},
+				{TraceID: traceID, Category: "politics", Title: "title-politics", URL: "https://example.com/politics", SocialImage: "https://example.com/image-politics"},
+				{TraceID: traceID, Category: "environment", Title: "title-environment", URL: "https://example.com/environment", SocialImage: "https://example.com/image-environment"},
+				{TraceID: traceID, Category: "economy", Title: "title-economy", URL: "https://example.com/economy", SocialImage: "https://example.com/image-economy"},
+				{TraceID: traceID, Category: "technology", Title: "title-technology", URL: "https://example.com/technology", SocialImage: "https://example.com/image-technology"},
+				{TraceID: traceID, Category: "crypto", Title: "title-crypto", URL: "https://example.com/crypto", SocialImage: "https://example.com/image-crypto"},
 			},
 		},
 		{
@@ -57,37 +60,37 @@ func TestApplicationParseNews(t *testing.T) {
 			setupHandler: func(ctrl *gomock.Controller) RequestHandler {
 				handler := mocks.NewMockRequestHandler(ctrl)
 				handler.EXPECT().
-					DoNewsRequest(domain.PoliticsCategory).
+					DoNewsRequest(gomock.Any(), domain.PoliticsCategory).
 					Return(domain.Articles{}, errors.New("request failed"))
 				handler.EXPECT().
-					DoNewsRequest(domain.EnvironmentCategory).
+					DoNewsRequest(gomock.Any(), domain.EnvironmentCategory).
 					Return(domain.Articles{Articles: []domain.GdeltAPIDto{{
 						Title:       "title-environment",
 						URL:         "https://example.com/environment",
 						SocialImage: "https://example.com/image-environment",
 					}}}, nil)
 				handler.EXPECT().
-					DoNewsRequest(domain.EconomyCategory).
+					DoNewsRequest(gomock.Any(), domain.EconomyCategory).
 					Return(domain.Articles{Articles: []domain.GdeltAPIDto{{
 						Title:       "title-economy",
 						URL:         "https://example.com/economy",
 						SocialImage: "https://example.com/image-economy",
 					}}}, nil)
 				handler.EXPECT().
-					DoNewsRequest(domain.TechnologyCategory).
+					DoNewsRequest(gomock.Any(), domain.TechnologyCategory).
 					Return(domain.Articles{}, nil)
 				handler.EXPECT().
-					DoNewsRequest(domain.CryptoCategory).
+					DoNewsRequest(gomock.Any(), domain.CryptoCategory).
 					Return(domain.Articles{}, nil)
 				return handler
 			},
 			expectedRequests: []domain.GdeltAPIDto{
-				{Category: "environment", Title: "title-environment", URL: "https://example.com/environment", SocialImage: "https://example.com/image-environment"},
-				{Category: "economy", Title: "title-economy", URL: "https://example.com/economy", SocialImage: "https://example.com/image-economy"},
+				{TraceID: traceID, Category: "environment", Title: "title-environment", URL: "https://example.com/environment", SocialImage: "https://example.com/image-environment"},
+				{TraceID: traceID, Category: "economy", Title: "title-economy", URL: "https://example.com/economy", SocialImage: "https://example.com/image-economy"},
 			},
 			expectedNewsItems: []domain.NewsDto{
-				{Category: "environment", Title: "title-environment", URL: "https://example.com/environment", SocialImage: "https://example.com/image-environment"},
-				{Category: "economy", Title: "title-economy", URL: "https://example.com/economy", SocialImage: "https://example.com/image-economy"},
+				{TraceID: traceID, Category: "environment", Title: "title-environment", URL: "https://example.com/environment", SocialImage: "https://example.com/image-environment"},
+				{TraceID: traceID, Category: "economy", Title: "title-economy", URL: "https://example.com/economy", SocialImage: "https://example.com/image-economy"},
 			},
 		},
 	}
@@ -106,7 +109,7 @@ func TestApplicationParseNews(t *testing.T) {
 				NewsChan:       newsChan,
 			}
 
-			app.parseNews()
+			app.parseNews(observability.ContextWithTraceID(context.Background(), traceID))
 
 			require.Eventually(t, func() bool {
 				return len(requestChan) == len(tt.expectedRequests) && len(newsChan) == len(tt.expectedNewsItems)
@@ -144,14 +147,14 @@ func TestApplicationStartParsingNews(t *testing.T) {
 			handler := mocks.NewMockRequestHandler(ctrl)
 			for _, category := range domain.AllCategories {
 				handler.EXPECT().
-					DoNewsRequest(category).
+					DoNewsRequest(gomock.Any(), category).
 					Return(domain.Articles{}, nil)
 			}
 
 			notifier := mocks.NewMockLLMNotifier(ctrl)
 			notifier.EXPECT().
-				StartLLMPrediction().
-				DoAndReturn(func() error {
+				StartLLMPrediction(gomock.Any()).
+				DoAndReturn(func(context.Context) error {
 					cancel()
 					return tt.notifierError
 				})

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+
+	"news-parser/internal/observability"
 )
 
 type LLMClient struct {
@@ -11,10 +13,13 @@ type LLMClient struct {
 	LLMAddress string
 }
 
-func (c LLMClient) StartLLMPrediction() error {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, c.LLMAddress, nil)
+func (c LLMClient) StartLLMPrediction(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.LLMAddress, nil)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
+	}
+	if traceID := observability.TraceIDFromContext(ctx); traceID != "" {
+		req.Header.Set(observability.TraceIDHeader, traceID)
 	}
 
 	resp, err := c.Client.Do(req)
