@@ -8,17 +8,18 @@ import (
 	"time"
 
 	"news-parser/internal/domain"
+	"news-parser/internal/observability"
 )
 
 const NewsRequestsCount = 50
 
 type RequestHandler interface {
-	DoNewsRequest(category domain.Category) (domain.Articles, error)
-	DoDataRequest(url string) ([]byte, error)
+	DoNewsRequest(ctx context.Context, category domain.Category) (domain.Articles, error)
+	DoDataRequest(ctx context.Context, url string) ([]byte, error)
 }
 
 type LLMNotifier interface {
-	StartLLMPrediction() error
+	StartLLMPrediction(ctx context.Context) error
 }
 
 type Application struct {
@@ -38,30 +39,36 @@ func (a Application) StartParsingNews(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-a.Ticker.C:
-			a.parseNews()
-			if err := a.LLMNotifier.StartLLMPrediction(); err != nil {
-				slog.Error("error starting llm", "err", err)
+			traceID := observability.NewTraceID()
+			cycleCtx := observability.ContextWithTraceID(ctx, traceID)
+			slog.Info("news parsing cycle started", slog.String("trace_id", traceID))
+			a.parseNews(cycleCtx)
+			if err := a.LLMNotifier.StartLLMPrediction(cycleCtx); err != nil {
+				slog.Error("error starting llm", "trace_id", traceID, "err", err)
 			}
 		}
 	}
 }
 
-func (a Application) parseNews() {
+func (a Application) parseNews(ctx context.Context) {
+	traceID := observability.TraceIDFromContext(ctx)
 	for _, category := range domain.AllCategories {
-		news, err := a.RequestHandler.DoNewsRequest(category)
+		news, err := a.RequestHandler.DoNewsRequest(ctx, category)
 		if err != nil {
-			slog.Error("error requesting news:", "err", err)
+			slog.Error("error requesting news:", "trace_id", traceID, "err", err)
 			continue
 		}
 		stringCategory := domain.CategoryToString(category)
 
 		go func() {
 			for _, dto := range news.Articles {
+				dto.TraceID = traceID
 				dto.Category = stringCategory
 
 				a.RequestChan <- dto
 
-				a.NewsChan <- domain.NewsDto{Category: stringCategory,
+				a.NewsChan <- domain.NewsDto{TraceID: traceID,
+					Category:    stringCategory,
 					Title:       dto.Title,
 					URL:         dto.URL,
 					SocialImage: dto.SocialImage}

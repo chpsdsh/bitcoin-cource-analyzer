@@ -1,6 +1,7 @@
 package domain
 
 type LLMResponse struct {
+	TraceID       string `json:"trace_id,omitempty"`
 	Category      string `json:"category"`
 	Summarization string `json:"summarization"`
 	Features      struct {

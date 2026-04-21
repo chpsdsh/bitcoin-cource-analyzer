@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"news-parser/internal/domain"
+	"news-parser/internal/observability"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -47,15 +48,17 @@ func NewKafkaProducer() KafkaProducer {
 	return KafkaProducer{articlesWriter: articlesWriter, newsWriter: newsWriter}
 }
 
-func (p KafkaProducer) SendArticle(dto domain.ArticleDto) {
+func (p KafkaProducer) SendArticle(ctx context.Context, dto domain.ArticleDto) {
 	b, err := json.Marshal(dto)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.Error(err.Error(), slog.String("trace_id", dto.TraceID))
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), kafkaSendTimeout)
+	ctx, cancel := context.WithTimeout(ctx, kafkaSendTimeout)
 	defer cancel()
-	if err = p.articlesWriter.WriteMessages(ctx, kafka.Message{Key: []byte(dto.Category), Value: b}); err != nil {
+	msg := kafka.Message{Key: []byte(dto.Category), Value: b, Headers: observability.KafkaHeadersFromContext(ctx)}
+	if err = p.articlesWriter.WriteMessages(ctx, msg); err != nil {
 		slog.Error("error sending to kafka:",
+			slog.String("trace_id", dto.TraceID),
 			slog.String("topic", p.articlesWriter.Topic),
 			slog.String("error", err.Error()),
 		)
@@ -63,15 +66,17 @@ func (p KafkaProducer) SendArticle(dto domain.ArticleDto) {
 
 }
 
-func (p KafkaProducer) SendNews(dto domain.NewsDto) {
+func (p KafkaProducer) SendNews(ctx context.Context, dto domain.NewsDto) {
 	b, err := json.Marshal(dto)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.Error(err.Error(), slog.String("trace_id", dto.TraceID))
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), kafkaSendTimeout)
+	ctx, cancel := context.WithTimeout(ctx, kafkaSendTimeout)
 	defer cancel()
-	if err = p.newsWriter.WriteMessages(ctx, kafka.Message{Key: []byte(dto.Category), Value: b}); err != nil {
+	msg := kafka.Message{Key: []byte(dto.Category), Value: b, Headers: observability.KafkaHeadersFromContext(ctx)}
+	if err = p.newsWriter.WriteMessages(ctx, msg); err != nil {
 		slog.Error("error sending to kafka:",
+			slog.String("trace_id", dto.TraceID),
 			slog.String("topic", p.newsWriter.Topic),
 			slog.String("error", err.Error()),
 		)

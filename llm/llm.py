@@ -8,6 +8,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from config import settings
+from observability import logger
 from prompts import SCORING_SYSTEM_PROMPT, SUMMARIZE_SYSTEM_PROMPT
 from utils import build_news_block, safe_json_loads
 
@@ -40,32 +41,32 @@ class LLMService:
                 return
 
             self.device, torch_dtype = self._resolve_device()
-            print(
-                f"[llm] loading model={self.model_name} device={self.device} dtype={torch_dtype}",
-                flush=True,
+            logger.info(
+                "model loading started",
+                extra={"_model": self.model_name, "_device": self.device, "_dtype": str(torch_dtype)},
             )
             started_at = time.perf_counter()
-            print("[llm] tokenizer load started", flush=True)
+            logger.info("tokenizer load started", extra={"_model": self.model_name})
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, use_fast=True)
-            print(
-                f"[llm] tokenizer load completed elapsed={time.perf_counter() - started_at:.2f}s",
-                flush=True,
+            logger.info(
+                "tokenizer load completed",
+                extra={"_model": self.model_name, "_elapsed_sec": round(time.perf_counter() - started_at, 2)},
             )
             model_load_started_at = time.perf_counter()
-            print("[llm] model weights load started", flush=True)
+            logger.info("model weights load started", extra={"_model": self.model_name})
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
                 torch_dtype=torch_dtype,
                 low_cpu_mem_usage=True,
             ).to(self.device)
             self.model.eval()
-            print(
-                f"[llm] model weights load completed elapsed={time.perf_counter() - model_load_started_at:.2f}s",
-                flush=True,
+            logger.info(
+                "model weights load completed",
+                extra={"_model": self.model_name, "_elapsed_sec": round(time.perf_counter() - model_load_started_at, 2)},
             )
-            print(
-                f"[llm] model loaded total_elapsed={time.perf_counter() - started_at:.2f}s",
-                flush=True,
+            logger.info(
+                "model loaded",
+                extra={"_model": self.model_name, "_total_elapsed_sec": round(time.perf_counter() - started_at, 2)},
             )
 
     def _generate_text(
@@ -76,9 +77,9 @@ class LLMService:
     ) -> str:
         self.load()
         generation_started_at = time.perf_counter()
-        print(
-            f"[llm] generation started max_new_tokens={max_new_tokens} device={self.device}",
-            flush=True,
+        logger.info(
+            "generation started",
+            extra={"_max_new_tokens": max_new_tokens, "_device": self.device},
         )
         messages = [
             {"role": "system", "content": system_prompt},
@@ -105,9 +106,12 @@ class LLMService:
 
         generated_ids = generated[0, model_inputs["input_ids"].shape[1]:]
         response = self.tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
-        print(
-            f"[llm] generation completed elapsed={time.perf_counter() - generation_started_at:.2f}s output_chars={len(response)}",
-            flush=True,
+        logger.info(
+            "generation completed",
+            extra={
+                "_elapsed_sec": round(time.perf_counter() - generation_started_at, 2),
+                "_output_chars": len(response),
+            },
         )
         return response
 
@@ -119,7 +123,7 @@ class LLMService:
         max_new_tokens: int,
     ) -> dict[str, Any]:
         repair_started_at = time.perf_counter()
-        print("[llm] json repair started", flush=True)
+        logger.info("json repair started")
         self.load()
 
         messages = [
@@ -154,9 +158,12 @@ class LLMService:
 
         generated_ids = generated[0, model_inputs["input_ids"].shape[1]:]
         fixed = self.tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
-        print(
-            f"[llm] json repair completed elapsed={time.perf_counter() - repair_started_at:.2f}s output_chars={len(fixed)}",
-            flush=True,
+        logger.info(
+            "json repair completed",
+            extra={
+                "_elapsed_sec": round(time.perf_counter() - repair_started_at, 2),
+                "_output_chars": len(fixed),
+            },
         )
         return safe_json_loads(fixed)
 
