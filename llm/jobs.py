@@ -112,12 +112,14 @@ def run_prediction_job(trace_id: str = "") -> None:
                 "prompt_version": settings.prompt_version,
             }
 
-            producer.send(
-                settings.kafka_llm_response_topic,
-                key=category,
-                value=event,
-                headers=[("trace_id", trace_id.encode("utf-8"))] if trace_id else None,
-            )
+            message = {
+                "topic": settings.kafka_llm_response_topic,
+                "key": category,
+                "value": event,
+            }
+            if trace_id:
+                message["headers"] = [("trace_id", trace_id.encode("utf-8"))]
+            producer.send(**message)
             logger.info(
                 "prediction sent",
                 extra={

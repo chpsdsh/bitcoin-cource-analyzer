@@ -28,10 +28,13 @@ _prediction_job_lock = threading.Lock()
 _prediction_job_running = False
 
 
-def _run_prediction_job_guarded(trace_id: str) -> None:
+def _run_prediction_job_guarded(trace_id: str = "") -> None:
     global _prediction_job_running
     try:
-        run_prediction_job(trace_id)
+        if trace_id:
+            run_prediction_job(trace_id)
+        else:
+            run_prediction_job()
     finally:
         with _prediction_job_lock:
             _prediction_job_running = False
@@ -136,9 +139,9 @@ def full_pipeline(request: SummarizeRequest) -> dict:
     
     
 @app.post("/predict")
-def predict(request: Request, background_tasks: BackgroundTasks) -> dict[str, str]:
+def predict(background_tasks: BackgroundTasks, request: Request | None = None) -> dict[str, str]:
     global _prediction_job_running
-    trace_id = request.headers.get(TRACE_ID_HEADER, "")
+    trace_id = request.headers.get(TRACE_ID_HEADER, "") if request is not None else ""
 
     with _prediction_job_lock:
         if _prediction_job_running:
@@ -147,5 +150,12 @@ def predict(request: Request, background_tasks: BackgroundTasks) -> dict[str, st
         _prediction_job_running = True
 
     logger.info("prediction job accepted", extra={"_trace_id": trace_id})
-    background_tasks.add_task(_run_prediction_job_guarded, trace_id)
+
+    def run_guarded() -> None:
+        if trace_id:
+            _run_prediction_job_guarded(trace_id)
+            return
+        _run_prediction_job_guarded()
+
+    background_tasks.add_task(run_guarded)
     return {"status": "accepted"}
