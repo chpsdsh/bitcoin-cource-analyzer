@@ -12,7 +12,7 @@ shift 2
 
 PROJECT_NAME="${COMPOSE_PROJECT_NAME:-bitcoin-cource-analyzer}"
 NETWORK_NAME="${COMPOSE_NETWORK_NAME:-${PROJECT_NAME}_default}"
-JMETER_IMAGE="${JMETER_IMAGE:-justb4/jmeter:5.6.3}"
+JMETER_IMAGE="${JMETER_IMAGE:-btca-jmeter:5.6.3}"
 
 mkdir -p "$OUTPUT_DIR"
 rm -rf "$OUTPUT_DIR/report"

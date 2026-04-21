@@ -227,6 +227,9 @@ jobs:
       - name: Prepare scripts
         run: chmod +x scripts/run-jmeter.sh scripts/assert-jmeter-results.sh
 
+      - name: Build JMeter runner image
+        run: docker build -t btca-jmeter:5.6.3 ./perf/jmeter
+
       - name: Start performance stack
         run: docker compose -f docker-compose.yml -f docker-compose.perf.yml up -d --build valkey mock-binance news-gateway llm-consumer
 
