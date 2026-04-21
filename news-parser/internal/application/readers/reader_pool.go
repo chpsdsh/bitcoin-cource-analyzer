@@ -10,6 +10,7 @@ import (
 	"news-parser/internal/application"
 	"news-parser/internal/application/utils"
 	"news-parser/internal/domain"
+	"news-parser/internal/observability"
 
 	"github.com/go-shiori/go-readability"
 )
@@ -37,17 +38,18 @@ func (w *worker) work(ctx context.Context, handler application.RequestHandler) {
 			if err != nil {
 				continue
 			}
-			data, err := handler.DoDataRequest(task.URL)
+			taskCtx := observability.ContextWithTraceID(ctx, task.TraceID)
+			data, err := handler.DoDataRequest(taskCtx, task.URL)
 			if err != nil {
-				slog.Error("error requesting data", "url:", task.URL, "err:", err)
+				slog.Error("error requesting data", "trace_id", task.TraceID, "url:", task.URL, "err:", err)
 				continue
 			}
 			article, err := readability.FromReader(bytes.NewReader(data), requestURL)
 			if err != nil {
-				slog.Error("error getting data from html", "url:", task.URL, "err:", err)
+				slog.Error("error getting data from html", "trace_id", task.TraceID, "url:", task.URL, "err:", err)
 				continue
 			}
-			w.results <- domain.ArticleDto{Category: task.Category, Title: task.Title, Text: utils.NormalizeText(article.TextContent)}
+			w.results <- domain.ArticleDto{TraceID: task.TraceID, Category: task.Category, Title: task.Title, Text: utils.NormalizeText(article.TextContent)}
 		case <-ctx.Done():
 			return
 		}

@@ -15,6 +15,7 @@ import (
 	"llm-consumer/internal/adapter/server"
 	"llm-consumer/internal/adapter/storage"
 	"llm-consumer/internal/application"
+	"llm-consumer/internal/observability"
 )
 
 const (
@@ -23,6 +24,8 @@ const (
 )
 
 func main() {
+	observability.InitLogger("llm-consumer")
+
 	redisConf, err := config.NewRedisConfig()
 	if err != nil {
 		slog.Error("Error loading redis config", slog.String("error", err.Error()))

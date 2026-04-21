@@ -1,7 +1,8 @@
 import traceback
 import threading
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from jobs import run_prediction_job
+from observability import TRACE_ID_HEADER, configure_logging, logger
 
 from config import settings
 from llm import llm_service
@@ -14,6 +15,7 @@ from schemas import (
     SummarizeResponse,
 )
 
+configure_logging()
 
 app = FastAPI(
     title="BTC ML Service Skeleton",
@@ -26,10 +28,13 @@ _prediction_job_lock = threading.Lock()
 _prediction_job_running = False
 
 
-def _run_prediction_job_guarded() -> None:
+def _run_prediction_job_guarded(trace_id: str = "") -> None:
     global _prediction_job_running
     try:
-        run_prediction_job()
+        if trace_id:
+            run_prediction_job(trace_id)
+        else:
+            run_prediction_job()
     finally:
         with _prediction_job_lock:
             _prediction_job_running = False
@@ -133,14 +138,27 @@ def full_pipeline(request: SummarizeRequest) -> dict:
         raise HTTPException(status_code=500, detail=f"pipeline failed: {exc}") from exc
     
     
-@app.post("/predict")
-def predict(background_tasks: BackgroundTasks) -> dict[str, str]:
+def predict(background_tasks: BackgroundTasks, trace_id: str = "") -> dict[str, str]:
     global _prediction_job_running
 
     with _prediction_job_lock:
         if _prediction_job_running:
+            logger.info("prediction job already running", extra={"_trace_id": trace_id})
             return {"status": "already_running"}
         _prediction_job_running = True
 
-    background_tasks.add_task(_run_prediction_job_guarded)
+    logger.info("prediction job accepted", extra={"_trace_id": trace_id})
+
+    def run_guarded() -> None:
+        if trace_id:
+            _run_prediction_job_guarded(trace_id)
+            return
+        _run_prediction_job_guarded()
+
+    background_tasks.add_task(run_guarded)
     return {"status": "accepted"}
+
+
+@app.post("/predict")
+def predict_endpoint(request: Request, background_tasks: BackgroundTasks) -> dict[str, str]:
+    return predict(background_tasks, request.headers.get(TRACE_ID_HEADER, ""))

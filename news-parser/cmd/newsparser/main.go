@@ -15,6 +15,7 @@ import (
 	"news-parser/internal/application"
 	"news-parser/internal/application/readers"
 	"news-parser/internal/domain"
+	"news-parser/internal/observability"
 )
 
 const (
@@ -23,6 +24,8 @@ const (
 )
 
 func main() {
+	observability.InitLogger("news-parser")
+
 	llmAddr := os.Getenv("LLM_ADDRESS")
 	if llmAddr == "" {
 		slog.Error("LLM_ADDRESS environment variable not set")

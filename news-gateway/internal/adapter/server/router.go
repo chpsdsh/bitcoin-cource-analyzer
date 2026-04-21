@@ -9,7 +9,8 @@ const (
 )
 
 func NewRouter(server NewsServer) *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery(), RequestIDMiddleware())
 	r.GET(newsEndpoint, server.GetNews)
 	return r
 }
