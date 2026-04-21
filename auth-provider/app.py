@@ -325,6 +325,10 @@ def render_auth_page(query: dict[str, Any], error_message: str = "", captcha_req
             padding: 28px;
             box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
           }}
+          .auth-panel {{
+            align-self: start;
+            margin-top: clamp(18px, 5vh, 64px);
+          }}
           .hero {{
             display: flex;
             flex-direction: column;
@@ -422,7 +426,7 @@ def render_auth_page(query: dict[str, Any], error_message: str = "", captcha_req
             <p>Create an account or sign in to continue. No external database is required here: this local OIDC provider keeps a lightweight user registry for the project demo.</p>
             <p>After successful authentication you will be redirected back to the protected app automatically.</p>
           </section>
-          <section class="panel">
+          <section class="panel auth-panel">
             {error_block}
             <div class="form-stack">
               <form method="post" action="/login">
