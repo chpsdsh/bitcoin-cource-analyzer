@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: news-parser
+    static_configs:
+      - targets:
+          - news-parser:9090
+
+  - job_name: llm-consumer
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - llm-consumer:8080
+
+  - job_name: business-metrics
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - business-metrics:8080

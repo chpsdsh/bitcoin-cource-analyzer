@@ -26,8 +26,10 @@ type NewsRequester struct {
 
 func (nr NewsRequester) DoNewsRequest(ctx context.Context, category domain.Category) (domain.Articles, error) {
 	URL := urlByCategory(category)
+	categoryName := domain.CategoryToString(category)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, URL, nil)
 	if err != nil {
+		observability.ObserveGDELTAttempt(categoryName, "failure", 0)
 		return domain.Articles{}, fmt.Errorf("error creating request %w", err)
 	}
 	if traceID := observability.TraceIDFromContext(ctx); traceID != "" {
@@ -36,19 +38,28 @@ func (nr NewsRequester) DoNewsRequest(ctx context.Context, category domain.Categ
 
 	resp, err := nr.Client.Do(req)
 	if err != nil {
+		observability.ObserveGDELTAttempt(categoryName, "failure", 0)
 		return domain.Articles{}, fmt.Errorf("error doing request to GDELT API %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
+	if resp.StatusCode != http.StatusOK {
+		observability.ObserveGDELTAttempt(categoryName, "failure", resp.StatusCode)
+		return domain.Articles{}, errors.New(resp.Status)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		observability.ObserveGDELTAttempt(categoryName, "failure", resp.StatusCode)
 		return domain.Articles{}, fmt.Errorf("error reading request body %w", err)
 	}
 
 	articles := domain.Articles{}
 	if err = json.Unmarshal(body, &articles); err != nil {
+		observability.ObserveGDELTAttempt(categoryName, "failure", resp.StatusCode)
 		return domain.Articles{}, fmt.Errorf("error unmarshalling JSON %w", err)
 	}
+	observability.ObserveGDELTAttempt(categoryName, "success", resp.StatusCode)
 	return articles, nil
 }
 

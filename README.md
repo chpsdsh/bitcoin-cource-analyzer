@@ -24,6 +24,45 @@ After startup:
 - Frontend: `http://localhost:8085`
 - Local OIDC provider: `http://localhost:8086`
 - Kafka UI: `http://localhost:8091`
+- Grafana: `http://localhost:3000` (`admin` / `admin`)
+- Prometheus: `http://localhost:9090`
+
+## Grafana Dashboard
+
+The stack provisions Prometheus and Grafana automatically.
+
+Dashboard:
+
+- `Bitcoin Course Analyzer: Technical & Business Metrics`
+
+Technical metrics:
+
+- GDELT public API attempts from `news-parser`, split by `success` / `failure`, category, and HTTP status.
+- Prediction attempts from `llm-consumer` `POST /predict`, split by `success` / `failure` and HTTP status.
+
+Business metrics:
+
+- Authenticated app page visits since `00:00 UTC`; API calls and session checks are not counted as visits.
+- Unique authenticated visitors since `00:00 UTC`, counted by email from the OAuth session.
+- Average predictions per user and average visits per user for the current UTC day.
+- Visit density by UTC hour for the current UTC day.
+
+Run and test:
+
+```bash
+docker compose up -d --build
+```
+
+Open `http://localhost:8085`, register or log in, browse the app, load news, and run a prediction. Then open Grafana at `http://localhost:3000`, sign in with `admin` / `admin`, and open the provisioned dashboard under the `Bitcoin Course Analyzer` folder.
+
+Raw checks:
+
+```bash
+curl -s http://localhost:9090/api/v1/targets
+curl -s 'http://localhost:9090/api/v1/query?query=business_visits_today_total'
+curl -s 'http://localhost:9090/api/v1/query?query=llm_consumer_prediction_attempts_total'
+curl -s 'http://localhost:9090/api/v1/query?query=news_parser_gdelt_api_attempts_total'
+```
 
 ## OAuth Access
 

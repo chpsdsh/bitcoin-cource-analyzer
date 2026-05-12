@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: Bitcoin Course Analyzer
+    orgId: 1
+    folder: Bitcoin Course Analyzer
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
