@@ -3,6 +3,7 @@ package binanceclient
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,8 @@ const (
 	clientTimeout = 10 * time.Second
 	btcURL        = "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
 )
+
+var ErrEmptyBTCPrice = errors.New("empty BTC price in response")
 
 type BinanceClient struct {
 	httpClient *http.Client
@@ -45,10 +48,16 @@ func (c BinanceClient) RequestBTCPrice() (domain.PriceResponse, error) {
 	if err != nil {
 		return domain.PriceResponse{}, fmt.Errorf("could not read response body: %w", err)
 	}
+	if resp.StatusCode != http.StatusOK {
+		return domain.PriceResponse{}, fmt.Errorf("unexpected BTC price response status %s: %s", resp.Status, string(data))
+	}
 
 	priceResponse := domain.PriceResponse{}
 	if err = json.Unmarshal(data, &priceResponse); err != nil {
 		return domain.PriceResponse{}, fmt.Errorf("could not unmarshal response body: %w", err)
+	}
+	if priceResponse.Price == "" {
+		return domain.PriceResponse{}, ErrEmptyBTCPrice
 	}
 	return priceResponse, nil
 }

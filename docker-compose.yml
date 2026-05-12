@@ -166,6 +166,47 @@ services:
       KAFKA_NEWS_TOPIC: "news_data"
       LLM_ADDRESS: "http://llm:8080/predict"
 
+  business-metrics:
+    build:
+      context: business-metrics
+    container_name: business-metrics
+    logging: *elk-logging
+    depends_on:
+      - logstash
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: prometheus
+    depends_on:
+      - news-parser
+      - llm-consumer
+      - business-metrics
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: "admin"
+      GF_SECURITY_ADMIN_PASSWORD: "admin"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+
   news-gateway:
     build:
       context: news-gateway
@@ -212,6 +253,7 @@ services:
     logging: *elk-logging
     depends_on:
       - valkey
+      - mock-binance
       - logstash
     restart: unless-stopped
     ports:
@@ -220,6 +262,13 @@ services:
       REDIS_ADDR: "valkey:6379"
       REDIS_PASSWORD: "password"
       REDIS_LLM_RESPONSE_DB: 2
+      BINANCE_BTC_PRICE_URL: "${BINANCE_BTC_PRICE_URL:-http://mock-binance:8080/api/v3/ticker/price?symbol=BTCUSDT}"
+
+  mock-binance:
+    build:
+      context: ./perf/mock-binance
+    container_name: mock-binance
+    restart: unless-stopped
 
   llm:
     build:
@@ -293,6 +342,7 @@ services:
      - news-gateway
      - llm-consumer
      - oauth2-proxy
+     - business-metrics
      - logstash
    restart: unless-stopped
    ports:
@@ -301,3 +351,5 @@ services:
 volumes:
   elasticsearch-data:
   auth-provider-data:
+  prometheus-data:
+  grafana-data:

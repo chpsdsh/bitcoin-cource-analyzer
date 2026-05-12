@@ -32,3 +32,13 @@ func RequestIDMiddleware() gin.HandlerFunc {
 		)
 	}
 }
+
+func PredictionMetricsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+
+		if c.FullPath() == predictionEndpoint {
+			observability.ObservePredictionAttempt(c.Writer.Status())
+		}
+	}
+}

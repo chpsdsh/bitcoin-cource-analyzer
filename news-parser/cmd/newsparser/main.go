@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	clientTimeout = time.Second * 30
-	tickerTimeout = time.Second * 10
+	clientTimeout  = time.Second * 30
+	tickerTimeout  = time.Second * 10
+	metricsAddress = ":9090"
 )
 
 func main() {
@@ -35,6 +36,7 @@ func main() {
 	client := &http.Client{Timeout: clientTimeout}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+	observability.StartMetricsServer(ctx, metricsAddress)
 
 	wg := &sync.WaitGroup{}
 	newsChan := make(chan domain.GdeltAPIDto, application.NewsRequestsCount)

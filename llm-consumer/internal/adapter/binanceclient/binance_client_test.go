@@ -40,6 +40,18 @@ func TestBinanceClientRequestBTCPrice(t *testing.T) {
 			responseBody:  `{"price":`,
 			expectedError: "could not unmarshal response body",
 		},
+		{
+			name:          "returns error on non-ok status",
+			responseCode:  http.StatusForbidden,
+			responseBody:  `{"code":0,"msg":"restricted location"}`,
+			expectedError: "unexpected BTC price response status",
+		},
+		{
+			name:          "returns error on empty price",
+			responseCode:  http.StatusOK,
+			responseBody:  `{"symbol":"BTCUSDT"}`,
+			expectedError: ErrEmptyBTCPrice.Error(),
+		},
 	}
 
 	for _, tt := range tests {
