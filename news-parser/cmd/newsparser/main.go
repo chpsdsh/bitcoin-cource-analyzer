@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	clientTimeout = time.Second * 30
-	tickerTimeout = time.Second * 10
+	clientTimeout  = time.Second * 30
+	tickerTimeout  = time.Second * 10
 	metricsAddress = ":9090"
 )
 

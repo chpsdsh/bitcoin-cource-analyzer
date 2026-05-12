@@ -11,7 +11,10 @@ import (
 	"time"
 )
 
-const metricsShutdownTimeout = 5 * time.Second
+const (
+	metricsReadHeaderTimeout = 5 * time.Second
+	metricsShutdownTimeout   = 5 * time.Second
+)
 
 var gdeltMetrics = struct {
 	sync.Mutex
@@ -49,7 +52,7 @@ func StartMetricsServer(ctx context.Context, address string) {
 	server := &http.Server{
 		Addr:              address,
 		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
+		ReadHeaderTimeout: metricsReadHeaderTimeout,
 	}
 
 	go func() {

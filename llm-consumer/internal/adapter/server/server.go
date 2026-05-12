@@ -11,6 +11,8 @@ import (
 	"llm-consumer/internal/observability"
 )
 
+const errorResponseKey = "error"
+
 type Predictor interface {
 	ValidateCategories(categories domain.Categories) error
 	DoPrediction(ctx context.Context, categories domain.Categories) (domain.Prediction, error)
@@ -28,7 +30,7 @@ func (s *Server) HandlePrediction(c *gin.Context) {
 			slog.String("trace_id", traceID),
 			slog.String("error", err.Error()),
 		)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{errorResponseKey: err.Error()})
 		return
 	}
 
@@ -38,7 +40,7 @@ func (s *Server) HandlePrediction(c *gin.Context) {
 			slog.Any("categories", categories.CategoriesList),
 			slog.String("error", err.Error()),
 		)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{errorResponseKey: err.Error()})
 		return
 	}
 
@@ -49,7 +51,7 @@ func (s *Server) HandlePrediction(c *gin.Context) {
 			slog.Any("categories", categories.CategoriesList),
 			slog.String("error", err.Error()),
 		)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{errorResponseKey: err.Error()})
 		return
 	}
 
