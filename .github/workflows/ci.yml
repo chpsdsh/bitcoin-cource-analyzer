@@ -444,5 +444,6 @@ jobs:
           SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
         with:
           args: >
+            -X
             -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
             -Dsonar.projectName=${{ env.SONAR_PROJECT_NAME || github.event.repository.name }}
